@@ -1,0 +1,8 @@
+META:
+  -
+    path: '/mnt/petrelfs/gaopeng/mj_1-18_nounfilter0.3_30M_cut20_with_sharegpt4v_captions.json'
+    type: 'image_text'
+    root: 'cluster_p_hdd:s3://linziyi_data/dream-machines-output/'
+  -
+    path: "/mnt/petrelfs/gaopeng/qlt/data_filter/caption_generation/collect_data/extra_9M.json"
+    type: 'image_text'

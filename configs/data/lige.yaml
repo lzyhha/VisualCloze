@@ -1,0 +1,5 @@
+META:
+  -
+    path: "/mnt/hwfile/alpha_vl/lizhongyu/in_context_control_images/flux_qinqi_5m/flux_qinqi_5m_condition_100k.jsonl"
+    type: 'image_pair'
+    

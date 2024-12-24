@@ -1,0 +1,749 @@
+(base) [duruoyi@SH-IDC1-10-140-0-31 in_context_flux]$ source activate lumina                        
+(lumina) [duruoyi@SH-IDC1-10-140-0-31 in_context_flux]$ cd flux-lumina/
+(lumina) [duruoyi@SH-IDC1-10-140-0-31 flux-lumina]$ python fly_code.py 
+请在计算节点执行相关命令
+
+文件名: meta_info_generation_sketch.json
+--------------------------------------------------
+(800, 800)
+(800, 800)
+
+文件名: meta_info_style_generation_hsmdj_unsplash_part1_with_sT.json
+--------------------------------------------------
+(1024, 1024)
+(960, 1280)
+
+文件名: meta_info_generation_3d_uv_atlas_50k.json
+--------------------------------------------------
+读取文件 meta_info_generation_3d_uv_atlas_50k.json 时发生错误: [Errno 13] Permission denied: '/mnt/petrelfs/linweifeng/Generate_Anything/data_base/images/black_image.png'
+
+文件名: meta_info_imageEdit_SeedxEdit_auto_openimages.json
+--------------------------------------------------
+(768, 768)
+(768, 768)
+
+文件名: meta_info_annotation_seg_laion-art_part1.json
+--------------------------------------------------
+(1000, 621)
+(1000, 621)
+
+文件名: meta_info_deblurring_BSD.json
+--------------------------------------------------
+(471, 312)
+(471, 312)
+
+文件名: meta_info_generation_region_nature_refcoco3.json
+--------------------------------------------------
+(640, 480)
+(640, 480)
+
+文件名: meta_info_annotation_canny_laion-art.json
+--------------------------------------------------
+(1170, 800)
+(1170, 800)
+
+文件名: meta_info_generation_subject_googleapi_anime.json
+--------------------------------------------------
+(800, 1132)
+(600, 464)
+
+文件名: meta_info_outpainting_image_wkq.json
+--------------------------------------------------
+(768, 1232)
+(768, 1232)
+
+文件名: meta_info_annotation_depth_depthAnythingv2_unsplash.json
+--------------------------------------------------
+(1920, 964)
+(1920, 964)
+
+文件名: meta_info_generation_depth_depthAnythingv2_pexel.json
+--------------------------------------------------
+(6000, 4000)
+(6000, 4000)
+
+文件名: meta_info_deblurring_other.json
+--------------------------------------------------
+(640, 480)
+(640, 480)
+
+文件名: meta_info_generation_subject_instantID_v1_back2nature.json
+--------------------------------------------------
+(1280, 1280)
+(1024, 1024)
+
+文件名: meta_info_restoration_jinwen_face.json
+--------------------------------------------------
+(1024, 1024)
+(1024, 1024)
+
+文件名: meta_info_outpainting_t2i_dataset.json
+--------------------------------------------------
+(520, 520)
+(520, 520)
+
+文件名: meta_info_image_restoration_UDCIR_poled.json
+--------------------------------------------------
+读取文件 meta_info_image_restoration_UDCIR_poled.json 时发生错误: [Errno 13] Permission denied: '/mnt/petrelfs/linweifeng/Generate_Anything/data_base/eval/zero-shot/UDC_IR/poled/test/display/image_24.jpg'
+
+文件名: meta_info_generation_subject_vggface2_with_sT.json
+--------------------------------------------------
+(424, 485)
+(512, 472)
+
+文件名: meta_info_imageEdit_ultraEdit_4M_part1.json
+--------------------------------------------------
+(512, 512)
+(512, 512)
+
+文件名: meta_info_inpainting_LHQC.json
+--------------------------------------------------
+(1024, 1024)
+(1024, 1024)
+
+文件名: meta_info_dehaze_NH-Haze.json
+--------------------------------------------------
+(1600, 1200)
+(1600, 1200)
+
+文件名: meta_info_desnow_RealSnow.json
+--------------------------------------------------
+(1280, 720)
+(1280, 720)
+
+文件名: meta_info_imageEdit_SeedxEdit_auto_upslash.json
+--------------------------------------------------
+(512, 512)
+(512, 512)
+
+文件名: meta_info_generation_region_text.json
+--------------------------------------------------
+(512, 512)
+(512, 512)
+
+文件名: meta_info_imageEdit_HQEdit.json
+--------------------------------------------------
+(717, 1022)
+(728, 1019)
+
+文件名: meta_info_grounding_seg_mask_VG.json
+--------------------------------------------------
+(800, 533)
+(800, 533)
+
+文件名: meta_info_generation_subject_instantID_v1_with_sT.json
+--------------------------------------------------
+(1024, 1024)
+(1280, 1280)
+
+文件名: meta_info_generation_3d_uv_atlas_5k.json
+--------------------------------------------------
+读取文件 meta_info_generation_3d_uv_atlas_5k.json 时发生错误: [Errno 13] Permission denied: '/mnt/petrelfs/linweifeng/Generate_Anything/data_base/images/black_image.png'
+
+文件名: meta_info_generation_subject_AM2k_with_sT.json
+--------------------------------------------------
+(1728, 1080)
+(1728, 1080)
+
+文件名: meta_info_generation_lineart_unsplash_pexel_caps.json
+--------------------------------------------------
+(856, 1280)
+(3648, 5472)
+
+文件名: meta_info_inpainting_image_wkq.json
+--------------------------------------------------
+(768, 1232)
+(768, 1232)
+
+文件名: meta_info_inpainting_hongsheng_mdj.json
+--------------------------------------------------
+(1024, 1024)
+(1024, 1024)
+
+文件名: meta_info_annotation_seg_unsplash_part2.json
+--------------------------------------------------
+(1920, 2400)
+(1920, 2400)
+
+文件名: meta_info_generation_region_nature_osprey.json
+--------------------------------------------------
+(640, 480)
+(640, 480)
+
+文件名: meta_info_grounding_detect_RefCOCO3.json
+--------------------------------------------------
+(640, 480)
+(640, 480)
+
+文件名: meta_info_generation_subject_dreambooth_with_sT.json
+--------------------------------------------------
+(1280, 1280)
+(1920, 1920)
+
+文件名: meta_info_grounding_seg_RefCOCO3.json
+--------------------------------------------------
+(537, 640)
+(537, 640)
+
+文件名: meta_info_generation_normal_unsplash.json
+--------------------------------------------------
+(1920, 1440)
+(1920, 1440)
+
+文件名: meta_info_annotation_normal_laion-art.json
+--------------------------------------------------
+(2000, 1500)
+(2000, 1500)
+
+文件名: meta_info_dewatermark.json
+--------------------------------------------------
+(256, 256)
+(256, 256)
+
+文件名: meta_info_face_restoration.json
+--------------------------------------------------
+(512, 512)
+(512, 512)
+
+文件名: meta_info_style_generation_hsmdj_t2i_part1.json
+--------------------------------------------------
+(1024, 1024)
+(640, 1280)
+
+文件名: meta_info_generation_seg_laion-art_part1.json
+--------------------------------------------------
+(1000, 621)
+(1000, 621)
+
+文件名: meta_info_grounding_detect_VG.json
+--------------------------------------------------
+(800, 533)
+(800, 533)
+
+文件名: meta_info_deblurring_RealBlur.json
+--------------------------------------------------
+(657, 752)
+(657, 752)
+
+文件名: meta_info_derain.json
+--------------------------------------------------
+(512, 384)
+(512, 384)
+
+文件名: meta_info_annotation_seg_laion-art_part2.json
+--------------------------------------------------
+(594, 792)
+(594, 792)
+
+文件名: meta_info_inpainting_Places2_val.json
+--------------------------------------------------
+(256, 256)
+(256, 256)
+
+文件名: meta_info_generation_seg.json
+--------------------------------------------------
+(736, 1128)
+(736, 1128)
+
+文件名: meta_info_generation_lineart_osmicman_laion2B_nolang.json
+--------------------------------------------------
+(1020, 1280)
+(900, 1131)
+
+文件名: meta_info_derain_CVPR19Rain.json
+--------------------------------------------------
+(720, 480)
+(720, 480)
+
+文件名: meta_info_extract_shadow_mask.json
+--------------------------------------------------
+(640, 480)
+(640, 480)
+
+文件名: meta_info_lowlight_enhance_LOLv2.json
+--------------------------------------------------
+(600, 400)
+(600, 400)
+
+文件名: meta_info_annotation_depth_Hypersim.json
+--------------------------------------------------
+(1024, 768)
+(1024, 768)
+
+文件名: meta_info_face_inpainting.json
+--------------------------------------------------
+(512, 512)
+(512, 512)
+
+文件名: meta_info_generation_pose_laion-art.json
+--------------------------------------------------
+(1600, 1072)
+(1600, 1072)
+
+文件名: meta_info_annotation_semantic_seg_ade20k.json
+--------------------------------------------------
+(683, 512)
+(683, 512)
+
+文件名: meta_info_annotation_sketch.json
+--------------------------------------------------
+(800, 534)
+(800, 534)
+
+文件名: meta_info_generation_canny_cosmic_cvpr24_processed.json
+--------------------------------------------------
+(958, 1280)
+(900, 1202)
+
+文件名: meta_info_imageEdit_ultraEdit_500k.json
+--------------------------------------------------
+(512, 512)
+(512, 512)
+
+文件名: meta_info_outpainting_4k.json
+--------------------------------------------------
+(4096, 4096)
+(4096, 4096)
+
+文件名: meta_info_annotation_depth_depthAnythingv2_pexel_1.json
+--------------------------------------------------
+(3335, 2223)
+(3335, 2223)
+
+文件名: meta_info_generation_style_v1_with_sT.json
+--------------------------------------------------
+(512, 512)
+(1024, 1024)
+
+文件名: meta_info_annotation_seg_laion-art_part3.json
+--------------------------------------------------
+(845, 1206)
+(845, 1206)
+
+文件名: meta_info_annotation_depth_depthAnythingv2_pexel.json
+--------------------------------------------------
+(6000, 4000)
+(6000, 4000)
+
+文件名: meta_info_deshadow.json
+--------------------------------------------------
+(640, 480)
+(640, 480)
+
+文件名: meta_info_annotation_depth_vkitti2.json
+--------------------------------------------------
+(1242, 375)
+(1242, 375)
+
+文件名: meta_info_restoration_jw_degradation_unsplash_30w.json
+--------------------------------------------------
+(750, 1024)
+(1920, 2620)
+
+文件名: meta_info_imageEdit_ultraEdit_4M_part2.json
+--------------------------------------------------
+(512, 512)
+(512, 512)
+
+文件名: meta_info_generation_depth_depthAnythingv2_unsplash.json
+--------------------------------------------------
+(1920, 964)
+(1920, 964)
+
+文件名: meta_info_generation_hed_unsplash.json
+--------------------------------------------------
+(938, 1280)
+(1920, 2620)
+
+文件名: meta_info_generation_subject_instantID_v1.json
+--------------------------------------------------
+(1024, 1024)
+(1280, 1280)
+
+文件名: meta_info_annotation_depth_depthAnythingv2_laion-art.json
+--------------------------------------------------
+(650, 975)
+(650, 975)
+
+文件名: meta_info_generation_subject_photomaker_clebahq_part1.json
+--------------------------------------------------
+(1024, 1024)
+(1024, 1024)
+
+文件名: meta_info_denoise.json
+--------------------------------------------------
+(512, 512)
+(512, 512)
+
+文件名: meta_info_flash_reflection_remove.json
+--------------------------------------------------
+(480, 416)
+(480, 416)
+
+文件名: meta_info_face_color.json
+--------------------------------------------------
+(512, 512)
+(512, 512)
+
+文件名: meta_info_generation_hed_cosmicman_laion2B_nolang.json
+--------------------------------------------------
+(1018, 1280)
+(900, 1131)
+
+文件名: meta_info_generation_canny_mj1-18_30M_p5.json
+--------------------------------------------------
+(1024, 1280)
+(960, 1200)
+
+文件名: meta_info_generation_subject_ownCollect.json
+--------------------------------------------------
+(4000, 2667)
+(5000, 3333)
+
+文件名: meta_info_imageEdit_gqaInpaint.json
+--------------------------------------------------
+(800, 600)
+(800, 600)
+
+文件名: meta_info_annotation_seg_unsplash_part1.json
+--------------------------------------------------
+(1920, 964)
+(1920, 964)
+
+文件名: meta_info_generation_depth_depthAnythingv2_laion-art.json
+--------------------------------------------------
+(650, 975)
+(650, 975)
+
+文件名: meta_info_generation_subject_AM2k.json
+--------------------------------------------------
+(1728, 1080)
+(1728, 1080)
+
+文件名: meta_info_image_restoration_UWIR_UIEB.json
+--------------------------------------------------
+读取文件 meta_info_image_restoration_UWIR_UIEB.json 时发生错误: [Errno 13] Permission denied: '/mnt/petrelfs/linweifeng/Generate_Anything/data_base/eval/zero-shot/Underwater_IR/UIEB/raw-890/832_img_.png'
+
+文件名: meta_info_generation_region_nature_VG.json
+--------------------------------------------------
+(800, 600)
+(800, 600)
+
+文件名: meta_info_subject_generation_photomarker_vggfacev2_part1_with_sT.json
+--------------------------------------------------
+(385, 425)
+(1024, 1024)
+
+文件名: meta_info_style_generation_wkq_t2i_part1.json
+--------------------------------------------------
+(1024, 1024)
+(704, 1280)
+
+文件名: meta_info_dehaze.json
+--------------------------------------------------
+(400, 400)
+(400, 400)
+
+文件名: meta_info_inpainting_2k.json
+--------------------------------------------------
+(2048, 2048)
+(2048, 2048)
+
+文件名: meta_info_inpainting_t2i_dataset.json
+--------------------------------------------------
+(520, 520)
+(520, 520)
+
+文件名: meta_info_generation_depth.json
+--------------------------------------------------
+(640, 640)
+(640, 640)
+
+文件名: meta_info_image_restoration_UDCIR_toled.json
+--------------------------------------------------
+读取文件 meta_info_image_restoration_UDCIR_toled.json 时发生错误: [Errno 13] Permission denied: '/mnt/petrelfs/linweifeng/Generate_Anything/data_base/eval/zero-shot/UDC_IR/toled/test/display/image_24.jpg'
+
+文件名: meta_info_imageEdit_SeedxEdit_real.json
+--------------------------------------------------
+(400, 533)
+(400, 533)
+
+文件名: meta_info_generation_normal_laion-art.json
+--------------------------------------------------
+(2000, 1500)
+(2000, 1500)
+
+文件名: meta_info_derain_raindrop.json
+--------------------------------------------------
+(720, 480)
+(720, 480)
+
+文件名: meta_info_grounding_seg_LISA.json
+--------------------------------------------------
+(800, 1067)
+(800, 1067)
+
+文件名: meta_info_style_generation_hsmdj_t2i_part1_with_sT.json
+--------------------------------------------------
+(1024, 1024)
+(640, 1280)
+
+文件名: meta_info_generation_subject_vggface2.json
+--------------------------------------------------
+(424, 485)
+(512, 472)
+
+文件名: meta_info_annotation_pose_laion-art.json
+--------------------------------------------------
+(1600, 1072)
+(1600, 1072)
+
+文件名: meta_info_generation_hed.json
+--------------------------------------------------
+(1280, 720)
+(1280, 720)
+
+文件名: meta_info_generation_canny_laion-art.json
+--------------------------------------------------
+(1170, 800)
+(1170, 800)
+
+文件名: meta_info_derain_RainDS.json
+--------------------------------------------------
+(1296, 728)
+(1296, 728)
+
+文件名: meta_info_imageEdit_ultraEdit_mask-control_100k.json
+--------------------------------------------------
+(512, 512)
+(512, 512)
+
+文件名: meta_info_generation_canny_pixabay.json
+--------------------------------------------------
+(1280, 720)
+(3208, 1806)
+
+文件名: meta_info_outpainting_image_hongsheng_mdj.json
+--------------------------------------------------
+(1024, 1024)
+(1024, 1024)
+
+文件名: meta_info_generation_lineart_mj1-18_30M_p4.json
+--------------------------------------------------
+(1280, 1280)
+(1024, 1024)
+
+文件名: meta_info_generation_logosticker.json
+--------------------------------------------------
+(768, 768)
+(768, 768)
+
+文件名: meta_info_imageEdit_SyntheticTraining.json
+--------------------------------------------------
+(512, 512)
+(512, 512)
+
+文件名: meta_info_generation_style_v2_with_sT.json
+--------------------------------------------------
+(512, 512)
+(1024, 1024)
+
+文件名: meta_info_generation_hed_extra_9M_combined.json
+--------------------------------------------------
+(1280, 1280)
+(1024, 1024)
+
+文件名: meta_info_outpainting_2k.json
+--------------------------------------------------
+(2048, 2048)
+(2048, 2048)
+
+文件名: meta_info_annotation_depth_Sintel.json
+--------------------------------------------------
+(1024, 436)
+(1024, 436)
+
+文件名: meta_info_subject_generation_photomarker_vggfacev2_part1.json
+--------------------------------------------------
+(385, 425)
+(1024, 1024)
+
+文件名: meta_info_inpainting_mjv6_50k.json
+--------------------------------------------------
+(1024, 1024)
+(1024, 1024)
+
+文件名: meta_info_imageEdit_MagicBrush.json
+--------------------------------------------------
+(500, 500)
+(1024, 1024)
+
+文件名: meta_info_outpainting_pexel_image.json
+--------------------------------------------------
+(4000, 6000)
+(4000, 6000)
+
+文件名: meta_info_generation_normal.json
+--------------------------------------------------
+(640, 640)
+(640, 640)
+
+文件名: meta_info_generation_style_v2.json
+--------------------------------------------------
+(512, 512)
+(1024, 1024)
+
+文件名: meta_info_outpainting_LHQC.json
+--------------------------------------------------
+(1024, 1024)
+(1024, 1024)
+
+文件名: meta_info_demoire.json
+--------------------------------------------------
+(4032, 3024)
+(4032, 3024)
+
+文件名: meta_info_generation_sketch_laion-art.json
+--------------------------------------------------
+(800, 534)
+(800, 534)
+
+文件名: meta_info_style_generation_hsmdj_unsplash_part1.json
+--------------------------------------------------
+(1024, 1024)
+(960, 1280)
+
+文件名: meta_info_generation_subject_dreambooth.json
+--------------------------------------------------
+(1280, 1280)
+(1920, 1920)
+
+文件名: meta_info_annotation_hed_laion-art.json
+--------------------------------------------------
+(1170, 800)
+(1170, 800)
+
+文件名: meta_info_imageEdit_ip2p.json
+--------------------------------------------------
+(512, 512)
+(512, 512)
+
+文件名: meta_info_style_generation_unsplash_wkq_part1_with_sT.json
+--------------------------------------------------
+(1920, 2880)
+(704, 1280)
+
+文件名: meta_info_generation_subject_photomaker_clebahq_part1_with_sT.json
+--------------------------------------------------
+(1024, 1024)
+(1024, 1024)
+
+文件名: meta_info_generation_hed_laion-art.json
+--------------------------------------------------
+(1170, 800)
+(1170, 800)
+
+文件名: meta_info_annotation_normal_unsplash.json
+--------------------------------------------------
+(1920, 1440)
+(1920, 1440)
+
+文件名: meta_info_imageEdit_EMU.json
+--------------------------------------------------
+(500, 500)
+(512, 512)
+
+文件名: meta_info_imageEdit_GIER.json
+--------------------------------------------------
+(4928, 3280)
+(4704, 1951)
+
+文件名: meta_info_grounding_seg_mask_RefCOCO3.json
+--------------------------------------------------
+(537, 640)
+(537, 640)
+
+文件名: meta_info_generation_subject_ownCollect_with_sT.json
+--------------------------------------------------
+(4000, 2667)
+(5000, 3333)
+
+文件名: meta_info_generation_seg_unsplash_part1.json
+--------------------------------------------------
+(1920, 964)
+(1920, 964)
+
+文件名: meta_info_dehaze_DenseHaze.json
+--------------------------------------------------
+(1600, 1200)
+(1600, 1200)
+
+文件名: meta_info_grounding_seg_VG.json
+--------------------------------------------------
+(800, 533)
+(800, 533)
+
+文件名: meta_info_generation_style_v1.json
+--------------------------------------------------
+(512, 512)
+(1024, 1024)
+
+文件名: meta_info_style_generation_unsplash_wkq_part1.json
+--------------------------------------------------
+(1920, 2880)
+(704, 1280)
+
+文件名: meta_info_desnow.json
+--------------------------------------------------
+(640, 480)
+(640, 480)
+
+文件名: meta_info_imageEdit_SeedxEdit_multi_turn.json
+--------------------------------------------------
+(1152, 768)
+(1152, 768)
+
+文件名: meta_info_style_generation_wkq_t2i_part1_with_sT.json
+--------------------------------------------------
+(1024, 1024)
+(704, 1280)
+
+文件名: meta_info_flash_reflection_extract.json
+--------------------------------------------------
+(480, 416)
+(480, 416)
+
+文件名: meta_info_grounding_seg_mask_gRefcoco.json
+--------------------------------------------------
+(427, 640)
+(427, 640)
+
+文件名: meta_info_outpainting_Places2_val.json
+--------------------------------------------------
+(256, 256)
+(256, 256)
+
+文件名: meta_info_outpainting_mjv6_50k.json
+--------------------------------------------------
+(1024, 1024)
+(1024, 1024)
+
+文件名: meta_info_image_color_restoration_nature.json
+--------------------------------------------------
+(1267, 1900)
+(1267, 1900)
+
+文件名: meta_info_super_resolution.json
+--------------------------------------------------
+(510, 300)
+(2040, 1200)
+
+文件名: meta_info_outpainting_pexel_image1.json
+--------------------------------------------------
+(8192, 5461)
+(8192, 5461)
+
+文件名: meta_info_lowlight_enhance.json
+--------------------------------------------------
+(600, 400)
+(600, 400)
