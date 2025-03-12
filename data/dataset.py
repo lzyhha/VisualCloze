@@ -13,7 +13,8 @@ import h5py
 import torch.distributed as dist
 from torch.utils.data import Dataset
 import yaml
-from data.prefix_instruction import task_dicts
+from data.prefix_instruction import degradation_list
+from data.data_utils import check_item_graph200k
 
 logger = logging.getLogger(__name__)
 
@@ -33,12 +34,14 @@ class ItemProcessor(ABC):
 
 
 class MyDataset(Dataset):
-    def __init__(self, config_path, item_processor: ItemProcessor, train_res=None, cache_on_disk=False):
+    def __init__(self, config_path, item_processor: ItemProcessor, cache_on_disk=False, task_dicts=None):
         logger.info(f"read dataset config from {config_path}")
         with open(config_path, "r") as f:
             self.config = yaml.load(f, Loader=yaml.FullLoader)
         logger.info("DATASET CONFIG:")
         logger.info(self.config)
+        
+        self.task_dicts = task_dicts
 
         self.cache_on_disk = cache_on_disk
         if self.cache_on_disk:
@@ -53,28 +56,19 @@ class MyDataset(Dataset):
         
         self.ann = ann
         self.group_indices = {key: list(range(val[0], val[1])) for key, val in group_indice_range.items()}
+        self.group_weights = {
+            'image_grid_graph200k': 1.0, 
+        }
         self.item_processor = item_processor
         
-        if train_res is not None:
-            self.train_res = train_res
-            self.ann = self.filter_images()
+        self.check_item = {
+            'image_grid_graph200k': self.check_item_graph200k, 
+        }
 
         logger.info(f"total length: {len(self)}")
 
     def __len__(self):
         return len(self.ann)
-    
-    def filter_images(self):
-        ann = []
-        for index in range(len(self.ann)):
-            try:
-                res = json.loads(self.ann[index])['resolution']
-                res = int(res.split(':')[0])
-                if res >= self.train_res * 0.8:
-                    ann.append(self.ann[index])
-            except Exception as e:
-                logger.info(f"Error processing item {index}: {e}")
-        return ann
     
     def _collect_annotations(self):
         group_ann = {}
@@ -170,92 +164,32 @@ class MyDataset(Dataset):
         group_indice_range = json.loads(cache_file["group_indice_range"].asstr()[()])
         return annotations, group_indice_range
 
-    def get_item_func(self, index):
+    def get_item_func(self, index, group_name=None):
         data_item = self.ann[index]
         if self.cache_on_disk:
             data_item = json.loads(data_item)
         else:
             data_item = copy.deepcopy(data_item)
 
-        return self.item_processor.process_item(data_item, training_mode=True)
+        return self.item_processor.process_item(data_item, training_mode=True, group_name=group_name)
 
-    def get_item_batch_func(self, index_list, image_type_list=None, context_num=None):
+    def get_item_batch_func(self, index_list, image_type_list=None, context_num=None, group_name=None):
         data_item = [self.ann[index] for index in index_list]
         if self.cache_on_disk:
             data_item = [json.loads(data_item) for data_item in data_item]
         else:
             data_item = [copy.deepcopy(data_item) for data_item in data_item]
 
-        return self.item_processor.process_item(data_item, training_mode=True, image_type_list=image_type_list, context_num=context_num)
+        return self.item_processor.process_item(data_item, training_mode=True, image_type_list=image_type_list, context_num=context_num, group_name=group_name)
 
-    # def __getitem__(self, index):
-    #     try:
-    #         return self.get_item_func(index)
-    #     except Exception as e:
-    #         if isinstance(e, DataBriefReportException):
-    #             logger.info(e)
-    #         else:
-    #             logger.info(
-    #                 f"Item {index} errored, annotation:\n"
-    #                 f"{self.ann[index]}\n"
-    #                 f"Error:\n"
-    #                 f"{traceback.format_exc()}"
-    #             )
-    #         for group_name, indices_this_group in self.group_indices.items():
-    #             if indices_this_group[0] <= index <= indices_this_group[-1]:
-    #                 if index == indices_this_group[0]:
-    #                     new_index = indices_this_group[-1]
-    #                 else:
-    #                     new_index = index - 1
-    #                 return self[new_index]
-    #         raise RuntimeError
-
-    # def groups(self):
-    #     return list(self.group_indices.values())
-
-
-
-    # def get_context_index(self, index, tried_indices, max_context_size):
-    #     context_index = []
-    #     for group_name, indices_this_group in self.group_indices.items():
-    #             if indices_this_group[0] <= index <= indices_this_group[-1]:
-    #                 available_indices = [i for i in indices_this_group if i not in tried_indices]
-    #                 if available_indices:
-    #                     for i in range(max_context_size):
-    #                         index = random.choice(available_indices)
-    #                         tried_indices.add(index)
-    #                         context_index.append(index)
-    #                     break
-    #     return context_index
-
-    def check_item(self, index, image_type_list):
-        valid = True
+    def check_item_graph200k(self, index, image_type_list):
         data_item = self.ann[index]
         if self.cache_on_disk:
             data_item = json.loads(data_item)
         else:
             data_item = copy.deepcopy(data_item)
-        # print("checking item:")
-        # print(data_item)
-        if "reference" in image_type_list:
-            if data_item["quality_assessment"] is not None:
-                if data_item["quality_assessment"]["objectConsistency"] < 3:
-                    valid = False
-            else:
-                valid = False
-        if "openpose" in image_type_list:
-            if data_item["condition"]["openpose"] in [None, '', [], {}]:
-                valid = False
-        if "qwen_mask" in image_type_list or "qwen_bbox" in image_type_list:
-            if data_item["condition"]["qwen_grounding_caption"] in [None, '', [], {}]:
-                valid = False
-        if "FrontEdit" in image_type_list:
-            if data_item["condition"]["qwen_subject_replacement"] in [None, '', [], {}]:
-                valid = False
-        if "DepthEdit" in image_type_list:
-            if data_item["condition"]["flux_dev_depth"] in [None, '', [], {}]:
-                valid = False
-        return valid
+
+        return check_item_graph200k(data_item, image_type_list)
 
     def get_context_index(self, index, tried_indices):
         for group_name, indices_this_group in self.group_indices.items():
@@ -266,65 +200,50 @@ class MyDataset(Dataset):
                         tried_indices.add(index)
                         break
         return index
+    
+    def get_group_name(self, index):
+        for group_name, indices_this_group in self.group_indices.items():
+                if indices_this_group[0] <= index <= indices_this_group[-1]:
+                    return group_name
+
+    def sample_group(self):
+        weights = list(self.group_weights.values())
+        groups = list(self.group_weights.keys())
+        
+        sample = random.choices(groups, weights=weights, k=1)[0]
+        
+        return sample
 
     def __getitem__(self, index):
-        max_retries = 3  # 最大重试次数
-        tried_indices = set([index])  # 记录已尝试过的索引
-        # for in-context learning
-        context_num_prob = [0.3, 0.4, 0.3]  # 概率分别对应context_num=1,2,3
+        
+        group_name = self.sample_group()
+        index = random.choice(self.group_indices[group_name])
+
+        tried_indices = set([index])
+        context_num_prob = [0.3, 0.4, 0.3]
         context_num = random.choices([1, 2, 3], weights=context_num_prob)[0]
-        # context_num = 0
-        task_weight_prob = [task["sample_weight"] for task in task_dicts]
+        task_weight_prob = [task["sample_weight"] for task in self.task_dicts[group_name]]
         block_list = []
         while True:
-            task_type = random.choices(task_dicts, weights=task_weight_prob)[0]
+            task_type = random.choices(self.task_dicts[group_name], weights=task_weight_prob)[0]
             image_type_list = random.choice(task_type["image_list"])
             if not any(block_type in image_type_list for block_type in block_list):
                 break
+        
+        check_item = self.check_item[group_name]
 
-        if context_num == 0:
-            return self.get_item_func(index)
-        else:
-            index_list = []
-            while len(index_list) < context_num:
-                index = self.get_context_index(index, tried_indices)
-                if self.check_item(index, image_type_list):
-                    index_list.append(index)
-            return self.get_item_batch_func(index_list, image_type_list, context_num)
-        
-        # while len(tried_indices) <= max_retries:
-        #     try:
-        #         if context_num == 0:
-        #             return self.get_item_func(index)
-        #         else:
-        #             index_list = []
-        #             while len(index_list) < context_num:
-        #                 index = self.get_context_index(index, tried_indices)
-        #                 if self.check_item(index, image_type_list):
-        #                     index_list.append(index)
-        #             return self.get_item_batch_func(index_list, image_type_list, context_num)
-        #     except Exception as e:
-        #         if isinstance(e, DataBriefReportException):
-        #             logger.info(e)
-        #         else:
-        #             logger.info(
-        #                 f"Item {index} errored, annotation:\n"
-        #                 f"{self.ann[index]}\n"
-        #                 f"Error:\n"
-        #                 f"{traceback.format_exc()}"
-        #             )
-                
-        #         # 在当前组内寻找新的索引
-        #         for group_name, indices_this_group in self.group_indices.items():
-        #             if indices_this_group[0] <= index <= indices_this_group[-1]:
-        #                 # 从当前组中随机选择一个未尝试过的索引
-        #                 available_indices = [i for i in indices_this_group if i not in tried_indices]
-        #                 if available_indices:
-        #                     index = random.choice(available_indices)
-        #                     tried_indices.add(index)
-        #                     break
-        #         else:
-        #             # 如果所有组都检查完仍未找到合适的索引，抛出异常
-        #             raise RuntimeError("无法在当前组中找到可用的数据项")
-        
-        # raise RuntimeError(f"达到最大重试次数 ({max_retries})，仍未能加载有效数据")
+        while True:
+            try:
+                results = self.get_items(index, check_item, context_num, image_type_list, tried_indices, group_name)
+                break
+            except Exception as e:
+                print(e.with_traceback())
+        return results
+    
+    def get_items(self, index, check_item, context_num, image_type_list, tried_indices, group_name):
+        index_list = []
+        while len(index_list) < context_num:
+            index = self.get_context_index(index, tried_indices)
+            if check_item(index, image_type_list):
+                index_list.append(index)
+        return self.get_item_batch_func(index_list, image_type_list, context_num, group_name)

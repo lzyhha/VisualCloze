@@ -1,34 +1,26 @@
 #!/usr/bin/env sh
 
-export HF_TOKEN="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"
-
-# Lumina-Next supports any resolution (up to 2K)
-res="768:1024x512"
-t=1
-guidance_scale=4.0
-seed=25
+guidance_scale=30.0
+seed=0
 steps=30
 solver=euler
-train_steps=0005000
-model_name=flux-dev-lora
-model_dir=/mnt/hwfile/alpha_vl/duruoyi/in_context_results/2x1_grid_8_mbs8_rank128_uniform_lige/checkpoints/${train_steps}
-cap_dir=lige_test.json
-out_dir=samples/2x1_grid_n8_mbs4_cfg${guidance_scale}_steps${steps}_seed${seed}_ckpt${train_steps}_uniform_lige
+train_steps=0010000
+lora_rank=256
+resolution=384
+model_name=flux-dev-fill-lora
 
-p=lumina
-# p=Gvlab-S1-32
-# p=Omnilab
+exp_name=visualcloze_1x8_bs16_mbs2_rank256_lr1e-4_384
+model_path=output/${exp_name}/checkpoints/${train_steps}/consolidated.00-of-01.pth
+data_path=dataset/test/data.json
+output_path=output/${exp_name}/samples
 
-srun -p ${p} --async --gres=gpu:1 --cpus-per-task=4 -n1 --ntasks-per-node=1 --quotatype=spot --job-name=in-sample \
-python -u sample.py --ckpt ${model_dir} \
---image_save_path ${out_dir} \
+python -u sample.py --model_path ${model_path} \
+--image_save_path ${output_path} \
 --solver ${solver} --num_sampling_steps ${steps} \
---caption_path ${cap_dir} \
+--data_path ${data_path} \
 --seed ${seed} \
---resolution ${res} \
---time_shifting_factor ${t} \
 --guidance_scale ${guidance_scale} \
 --batch_size 1 \
 --model_name ${model_name} \
-# --do_classifier_free_guidance \
-# --debug \
+--lora_rank ${lora_rank} \
+--resolution ${resolution}

@@ -1,271 +1,203 @@
 <p align="center">
- <img src="../assets/lumina-logo.png" width="40%"/>
- <br>
+  <img src="https://github.com/lzyhha/VisualCloze/blob/main/figures/visualcloze.png" height=100>
+
 </p>
 
-# Lumina-Next-T2I
+<div align="center">
+<h1> VisualCloze: A Universal Image Generation Framework via Visual In-Context Learning </h1>
 
-The `Lumina-Next-T2I` model that uses Next-DiT with a 2B parameters model as well as using [Gemma-2B](https://huggingface.co/google/gemma-2b) as a text encoder. Compared with `Lumina-T2I`, it has faster inference speed, richer generation style, and more multilingual support, etc.
+</div>
 
-Our generative model has `Next-DiT` as the backbone, the text encoder is the `Gemma` 2B model, and the VAE uses a version of `sdxl` fine-tuned by stabilityai.
+<div align="center">
 
-- Generation Model: Next-DiT
-- Text Encoder: [Gemma-2B](https://huggingface.co/google/gemma-2b)
-- VAE: [sdxl-vae](https://huggingface.co/stabilityai/sdxl-vae)
+[[Paper]()] &emsp; [[Online Demo]()] &emsp; [[Project Page]()] &emsp; <br>[[🤗 Model Card]()] &emsp; [[🤗 Dataset Card]()] <br>
 
-## 📰 News
 
-- [2024-5-12] 🚀🚀🚀 We release the next version of `Lumina-T2I`, called `Lumina-Next-T2I` for faster and lower memory usage image generation model.
+</div>
 
-## 🎮 Model Zoo
+## 🌠 Key Features:
 
-More checkpoints of our model will be released soon~
+An in-context learning based universal image generation framework.
+1. Support various in-domain tasks. 🔥 [Examples](#supporting-various-in-domain-tasks) 
+2. Generalize to <strong><span style="color:hotpink"> unseen tasks</span></strong> through in-context learning.  🔥 [Examples](#generalization-to-unseen-tasks)  
+3. Unify multiple tasks into one step and generate both target image and intermediate results.  🔥 [Examples](#consolidate-multi-tasks) 
+4. Support reverse-engineering a set of conditions from a target image. 🔥 [Examples](#reverse-generation) 
 
-| Resolution | Next-DiT Parameter| Text Encoder | Prediction | Download URL  |
-| ---------- | ----------------------- | ------------ | -----------|-------------- |
-| 1024       | 2B             |    [Gemma-2B](https://huggingface.co/google/gemma-2b)  |   Rectified Flow | [hugging face](https://huggingface.co/Alpha-VLLM/Lumina-Next-T2I) |
+## 🔥 **Examples**
 
-## Installation
+[![Huggingface VisualCloze](https://img.shields.io/static/v1?label=Demo&message=Huggingface%20Gradio&color=orange)](xx)
 
-Before installation, ensure that you have a working ``nvcc``
+### Supporting various in-domain tasks
+![Supporting various in-domain tasks](https://github.com/lzyhha/VisualCloze/blob/main/figures/seen.jpg)
 
-```bash
-# The command should work and show the same version number as in our case. (12.1 in our case).
-nvcc --version
+### Generalization to unseen tasks
+
+Using in-context examples as task demonstrations to enable the model generalize to unseen tasks.
+
+
+![Generalization to unseen tasks](https://github.com/lzyhha/VisualCloze/blob/main/figures/face.jpg)
+
+![Generalization to unseen tasks](https://github.com/lzyhha/VisualCloze/blob/main/figures/unseen.jpg)
+
+### Consolidate multi-tasks
+
+Our method can unify multiple tasks into one step and generate not only the target image but also the intermediate results.
+
+![Consolidate multi-tasks](https://github.com/lzyhha/VisualCloze/blob/main/figures/consolidate.jpg)
+
+### Reverse generation
+
+Our method supports reverse generation, 
+i.e.,  reverse-engineering a set of conditions from a target. 
+
+![Reverse generation](https://github.com/lzyhha/VisualCloze/blob/main/figures/reverse.jpg)
+
+## 🔧 Dependencies and Installation
+
+See [installation structions](docs/INSTALL.md) for details.
+
+## ⏬ Dataset
+
+We have released the Graph200K dataset in [huggingface](). 
+To use it in VisualCloze, we preprocess it using the [script](). 
+
+Please refer to [dataset](docs/DATASET.md) for more details.
+
+## 🚀 Training
+
+After preprocessing the Graph200K dataset as shown in [dataset](docs/DATASET.md), 
+please setting the `path` item in [visualcloze.yaml](configs/data/visualcloze.yaml) as the generated json file. (todo)
+
+```yaml
+META:
+  -
+    path: "the json file of the training set after preprocessing"
+    type: 'image_grid_graph200k'
 ```
 
-On some outdated distros (e.g., CentOS 7), you may also want to check that a late enough version of
-``gcc`` is available
+Then, you can train the model using a script like [exps/train.sh](exps/train.sh). 
+You should personalize `gpu_num`, `batch_size`, and `micro_batch_size` according to your device. 
 
 ```bash
-# The command should work and show a version of at least 6.0.
-# If not, consult distro-specific tutorials to obtain a newer version or build manually.
-gcc --version
+bash exps/train.sh
 ```
 
-Downloading Lumina-T2X repo from github:
+## 💻 Inference
+
+### 1. Download Models
+
+In [huggingface](xx), 
+we release [visualcloze-384-lora]() and [visualcloze-512-lora](), 
+trained with the grid resolution of 384 and 512, respectively. 
+**<span style="color:hotpink">The grid resolution means that each image is resized to the area of the square of it before concatenating images into a grid layout.</span>**
+
+
+**Note: Apart from the Graph200K, the released models are trained with a part of internal multi-task
+datasets, to cover more diverse tasks and improve the generalization ability.**
+
+⭐⭐ Using `huggingface-cli` downloading our model:
 
 ```bash
-git clone https://github.com/Alpha-VLLM/Lumina-T2X
-```
-
-### 1. Create a conda environment and install PyTorch
-
-Note: You may want to adjust the CUDA version [according to your driver version](https://docs.nvidia.com/deploy/cuda-compatibility/#default-to-minor-version).
-
-  ```bash
-  conda create -n Lumina_T2X -y
-  conda activate Lumina_T2X
-  conda install python=3.11 pytorch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 pytorch-cuda=12.1 -c pytorch -c nvidia -y
-  ```
-
-### 2. Install dependencies
-
-  ```bash
-  pip install diffusers fairscale accelerate tensorboard transformers gradio torchdiffeq click
-  ```
-
-  or you can use
-
-  ```bash
-  cd lumina_next_t2i
-  pip install -r requirements.txt
-  ```
-
-### 3. Install ``flash-attn``
-
-  ```bash
-  pip install flash-attn --no-build-isolation
-  ```
-
-### 4. Install [nvidia apex](https://github.com/nvidia/apex) (optional)
-
->[!Warning]
-> While Apex can improve efficiency, it is *not* a must to make Lumina-T2X work.
->
-> Note that Lumina-T2X works smoothly with either:
-> + Apex not installed at all; OR
-> + Apex successfully installed with CUDA and C++ extensions.
->
-> However, it will fail when:
-> + A Python-only build of Apex is installed.
->
-> If the error `No module named 'fused_layer_norm_cuda'` appears, it typically means you are using a Python-only build of Apex. To resolve this, please run `pip uninstall apex`, and Lumina-T2X should then function correctly.
-
-You can clone the repo and install following the official guidelines (note that we expect a full
-build, i.e., with CUDA and C++ extensions)
-
-```bash
-pip install ninja
-git clone https://github.com/NVIDIA/apex
-cd apex
-# if pip >= 23.1 (ref: https://pip.pypa.io/en/stable/news/#v23-1) which supports multiple `--config-settings` with the same key...
-pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" ./
-# otherwise
-pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --global-option="--cpp_ext" --global-option="--cuda_ext" ./
-```
-
-## Inference
-
-To ensure that our generative model is ready to use right out of the box, we provide a user-friendly CLI program and a locally deployable Web Demo site.
-
-### Preparation
-
-1. Install Lumina-T2I
-
-```bash
-pip install -e .
-```
-
-2. Prepare the pretrained checkpoints
-
-⭐⭐ (Recommended) you can use `huggingface-cli` downloading our model:
-
-```bash
-huggingface-cli download --resume-download Alpha-VLLM/Lumina-Next-SFT --local-dir /path/to/ckpt
+huggingface-cli download --resume-download VisualCloze/VisualCloze --local-dir /path/to/ckpt
 ```
 
 or using git for cloning the model you want to use:
-
+(todo)
 ```bash
-git clone https://huggingface.co/Alpha-VLLM/Lumina-Next-SFT
+git clone https://huggingface.co/VisualCloze/VisualCloze
 ```
 
->[!Note]
-> For Chinese user using command below to download the model:
-> ```bash
-> git lfs install
-> git clone https://www.wisemodel.cn/Alpha-VLLM/Lumina-Next-SFT.git
-> ```
+### 2. Web Demo (Gradio)
 
-3. Converting `*.pth` files to `*.safetensors`
-
-If you are loading your own trained model, please convert it to `.safetensors` first for security reasons before loading. Assuming your trained model path is `/path/to/your/own/model.pth` and your save directory is `/path/to/new/model`.
-
-```bash
-lumina_next convert "/path/to/your/own/model.pth" "/path/to/new/directory/" # convert to `.safetensors`
-```
-
-Explanation of the `lumina convert` command:
-```bash
-# <weight_path> means your trained model path.
-# <output_dir> means the directory where you want to save the model.
-lumina_next convert <weight_path> <output_dir>
-
-# example 1:
-lumina_next convert "/path/to/your/own/model.pth" "/path/to/new/directory/" # convert to `.safetensors`
-
-# example 2:
-lumina_next convert "/path/to/your/own/model.safetensors" "/path/to/new/directory/" # convert to `.pth`
-```
-
-### Direct Inference
-
-To generate images directly from the inference code (for development), run the following command:
-```bash
-python -u sample.py --ckpt ${ckpt_dir} \
-    --image_save_path ${save_dir} \
-    --num_sampling_steps ${steps} \
-    --caption_path ${prompt_dir} \
-    --seed ${seed} \
-    --resolution ${res} \
-    --time_shifting_factor ${t} \
-    --batch_size 1 \
-```
-You can personalize more arguments by checking the `sample.py` file.
-
-### Web Demo
 
 To host a local gradio demo for interactive inference, run the following command:
 
 ```bash
-# `/path/to/ckpt` should be a directory containing `consolidated*.pth` and `model_args.pth`
+# By default, we use the model trained under the grid resolution of 384. 
+python app.py --model_path "path to downloaded visualcloze-384-lora.pth" --resolution 384
 
-# default
-python -u demo.py --ckpt "/path/to/ckpt"
-
-# the demo by default uses bf16 precision. to switch to fp32:
-python -u demo.py --ckpt "/path/to/ckpt" --precision fp32
-
-# use ema model
-python -u demo.py --ckpt "/path/to/ckpt" --ema
+# To use the model with the grid resolution of 512, you should set the resolution parameter to 512.
+python app.py --model_path "path to downloaded visualcloze-512-lora.pth" --resolution 512
 ```
 
-### CLI
+#### Usage Tips:
+- [SDEdit](https://arxiv.org/abs/2108.01073) is used to upsampling the generated image that has the initial resoluation of 384/512 when using grid resolution of 384/512. You can set `upsampling noise` in the advanced options to adjust the noise levels added to the image. 
+For tasks that have strict requirements on the spatial alignment of inputs and outputs, 
+you can increase `upsampling noise` or even set it to 1 to disable SDEdit.
+- ❗❗❗ Before clicking the generate button, **please wait until all images, prompts, and other components are fully loaded**, especially when using task examples. Otherwise, the inputs from the previous and current sessions may get mixed.
 
-1. Setting your personal inference configuration
 
-Update your own personal inference settings to generate different styles of images, checking `config/infer/config.yaml` for detailed settings. Detailed config structure:
+### 3. Custom Sampling
 
-> `/path/to/ckpt` should be a directory containing `consolidated*.pth` and `model_args.pth`
+We have implement a pipeline of the visualcloze in [visualcloze.py](visualcloze.py). 
+This can be easily used for custom reasoning. 
+In [inference.py](inference.py), we show an example of usage on virtual try-on.
 
-```yaml
-- settings:
+```python
+from visualcloze import VisualClozeModel
 
-  model:
-    ckpt: "/path/to/ckpt"           # if ckpt is "", you should use `--ckpt` for passing model path when using `lumina` cli.
-    ckpt_lm: ""                     # if ckpt is "", you should use `--ckpt_lm` for passing model path when using `lumina` cli.
-    token: ""                       # if LLM is a huggingface gated repo, you should input your access token from huggingface and when token is "", you should `--token` for accessing the model.
+model = VisualClozeModel(
+  model_path="the path of model weigts", 
+  resolution=384 or 512, 
+  lora_rank=256
+)
+'''
+grid_h: 
+The number of in-context examples + 1. 
+When without in-context example, it should be set to 1. 
 
-  transport:
-    path_type: "Linear"             # option: ["Linear", "GVP", "VP"]
-    prediction: "velocity"          # option: ["velocity", "score", "noise"]
-    loss_weight: "velocity"         # option: [None, "velocity", "likelihood"]
-    sample_eps: 0.1
-    train_eps: 0.2
+grid_w: 
+The number of images involved in a task. 
+In the Depth-to-Image task, it is 2. 
+In the Virtual Try-On, it is 3.
+'''
+model.set_grid_size(grid_h, grid_w)
+'''
+images: 
+List[List[PIL.Image.Image]]. A grid-layout image collection, 
+each row represents an in-context example or the current query, 
+where the current query should be placed in the last row. 
+The target image can be None in the input. 
+The other images should be the PIL Image class (Image.Image).
 
-  ode:
-    atol: 1e-6                      # Absolute tolerance
-    rtol: 1e-3                      # Relative tolerance
-    reverse: false                  # option: true or false
-    likelihood: false               # option: true or false
-
-  infer:
-      resolution: "1024x1024"     # option: ["1024x1024", "512x2048", "2048x512", "(Extrapolation) 1664x1664", "(Extrapolation) 1024x2048", "(Extrapolation) 2048x1024"]
-      num_sampling_steps: 60      # range: 1-1000
-      cfg_scale: 4.               # range: 1-20
-      solver: "euler"             # option: ["euler", "dopri5", "dopri8"]
-      t_shift: 4                  # range: 1-20 (int only)
-      ntk_scaling: true           # option: true or false
-      proportional_attn: true     # option: true or false
-      seed: 0                     # rnage: any number
+prompts: 
+List[str]. Three prompts, representing the layout prompt, task prompt, 
+and content prompt respectively.
+'''
+result = model.process_images(
+  images, 
+  prompts, 
+)[-1] # return PIL.Image.Image
 ```
 
-- model:
-  - `ckpt`: lumina-t2i checkpoint path from [huggingface repo](https://huggingface.co/Alpha-VLLM/Lumina-T2I) containing `consolidated*.pth` and `model_args.pth`.
-  - `ckpt_lm`: LLM checkpoint.
-  - `token`: huggingface access token for accessing gated repo.
-- transport:
-  - `path_type`: the type of path for transport: 'Linear', 'GVP' (Geodesic Vector Pursuit), or 'VP' (Vector Pursuit).
-  - `prediction`: the prediction model for the transport dynamics.
-  - `loss_weight`: the weighting of different components in the loss function, can be 'velocity' for dynamic modeling, 'likelihood' for statistical consistency, or None for no weighting
-  - `sample_eps`: sampling in the transport model.
-  - `train_eps`: training to stabilize the learning process.
-- ode:
-  - `atol`: Absolute tolerance for the ODE solver. (options: ["Linear", "GVP", "VP"])
-  - `rtol`: Relative tolerance for the ODE solver. (option: ["velocity", "score", "noise"])
-  - `reverse`: run the ODE solver in reverse. (option: [None, "velocity", "likelihood"])
-  - `likelihood`: Enable calculation of likelihood during the ODE solving process.
-- infer:
-  - `resolution`: generated image resolution.
-  - `num_sampling_steps`: sampling step for generating image.
-  - `cfg_scale`: classifier-free guide scaling factor
-  - `solver`: solver for image generation.
-  - `t_shift`: time shift factor.
-  - `ntk_scaling`: ntk rope scaling factor.
-  - `proportional_attn`: Whether to use proportional attention.
-  - `seed`: random initialization seeds.
-
-2. Run with CLI
-
-inference command:
+Execute the usage example and see the output in example.jpg.
 ```bash
-lumina_next infer -c <config_path> <caption_here> <output_dir>
+python inference.py --model_path "path to downloaded visualcloze-384-lora.pth" --resolution 384
+
+python inference.py --model_path "path to downloaded visualcloze-512-lora.pth" --resolution 512
 ```
 
-e.g. Demo command:
+### 4. Inference on Graph200K test set
 
+To generate images on the test set of the Graph200K, run the following command:
 ```bash
-cd lumina_next_t2i
-lumina_next infer -c "configs/infer/settings.yaml" "a snow man of ..." "./outputs"
+# Set data_path to the json file of the test set, which is generated when preprocessing.
+# Set model_path to the path of model weights.
+bash exp/sample.sh
+```
+
+You can modify `test_task_dicts` in [prefix_instruction.py](data/prefix_instruction.py) to customize your required tasks.
+
+
+# 📚 Citation
+
+If you find VisualCloze useful for your research and applications, please cite using this BibTeX:
+
+```bibtex
+@article{li2025visualcloze,
+  title={VisualCloze : A Universal Image Generation Framework via Visual In-Context Learning},
+  author={Li, Zhong-Yu and Du, ruoyi and Yan, Juncheng and Zhuo, Le and Li, Zhen and Gao, Peng and Ma, Zhanyu and Cheng, Ming-Ming},
+  journal={arXiv preprint arxiv:},
+  year={2025}
+}
 ```

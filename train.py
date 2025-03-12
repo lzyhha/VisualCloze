@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 """
-A minimal training script for Lumina-T2I using PyTorch FSDP.
+A training script for VisualCloze using PyTorch FSDP.
 """
 import argparse
 from collections import OrderedDict, defaultdict
@@ -20,13 +20,8 @@ import os
 import random
 import socket
 from time import time
-import warnings
-from safetensors import safe_open
 import wandb
-import cv2
-import numpy as np
 
-from PIL import Image
 import fairscale.nn.model_parallel.initialize as fs_init
 import torch
 import torch.distributed as dist
@@ -49,471 +44,19 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from torchvision import transforms
 from diffusers import AutoencoderKL
-from einops import rearrange, repeat
+from einops import rearrange
 
-from data import ItemProcessor, MyDataset
-from flux.sampling import prepare_modified, prepare_fill_modified
-from flux.util import load_ae, load_clip, load_flow_model, load_t5
-from imgproc import generate_crop_size_list, to_rgb_if_rgba, var_center_crop
-from parallel import distributed_init, get_intra_node_process_group
+from data import MyDataset
+from data import dataloader_collate_fn, get_train_sampler
+from models.sampling import prepare_modified
+from models.util import load_clip, load_flow_model, load_t5
+from util.imgproc import to_rgb_if_rgba
+from util.parallel import distributed_init, get_intra_node_process_group
 from transport import create_transport
 from util.misc import SmoothedValue
 
-from data_reader import read_general
-from data.prefix_instruction import get_layout_instruction, get_task_instruction, get_content_instruction, get_image_prompt, task_dicts, condition_list, degradation_list, style_list, editing_list
-from degradation_utils import add_degradation
-
-#############################################################################
-#                            Data item Processor                            #
-#############################################################################
-
-
-
-def resize_with_aspect_ratio(img, resolution, divisible=16, aspect_ratio=None):
-    """调整图片大小,保持长宽比,使面积接近resolution**2,且宽高能被16整除
-    
-    Args:
-        img: PIL Image 或 torch.Tensor (C,H,W)/(B,C,H,W)
-        resolution: 目标分辨率
-        divisible: 确保输出尺寸能被此数整除
-    
-    Returns:
-        调整大小后的图像,与输入类型相同
-    """
-    # 检查输入类型并获取尺寸
-    is_tensor = isinstance(img, torch.Tensor)
-    if is_tensor:
-        if img.dim() == 3:
-            c, h, w = img.shape
-            batch_dim = False
-        else:
-            b, c, h, w = img.shape
-            batch_dim = True
-    else:
-        w, h = img.size
-        
-    # 计算新尺寸
-    if aspect_ratio is None:
-        aspect_ratio = w / h
-    target_area = resolution * resolution
-    new_h = int((target_area / aspect_ratio) ** 0.5)
-    new_w = int(new_h * aspect_ratio)
-    
-    # 确保能被divisible整除
-    new_w = max(new_w // divisible, 1) * divisible
-    new_h = max(new_h // divisible, 1) * divisible
-    
-    # 根据输入类型调整大小
-    if is_tensor:
-        # 使用torch的插值方法
-        mode = 'bilinear'
-        align_corners = False
-        if batch_dim:
-            return F.interpolate(img, size=(new_h, new_w), 
-                               mode=mode, align_corners=align_corners)
-        else:
-            return F.interpolate(img.unsqueeze(0), size=(new_h, new_w),
-                               mode=mode, align_corners=align_corners).squeeze(0)
-    else:
-        # 使用PIL的LANCZOS重采样
-        return img.resize((new_w, new_h), Image.LANCZOS)
-
-class T2IItemProcessor(ItemProcessor):
-    def __init__(self, transform, resolution=512):
-        self.image_transform = transform
-        self.resolution = resolution
-    
-    def pixwizard_process_item(self, data_item):
-        input_image_path = data_item["input_path"]
-        input_image = Image.open(read_general(input_image_path)).convert("RGB")
-        target_image_path = data_item["target_path"]
-        target_image = Image.open(read_general(target_image_path)).convert("RGB")
-        text = data_item["prompt"]
-        return input_image, target_image, text
-
-    def lige_process_item(self, data_item):
-        random.shuffle(condition_list)
-        for condition in condition_list:
-            try:
-                input_image_path = data_item["condition"][condition]
-                input_image = Image.open(read_general(input_image_path)).convert("RGB")
-                break 
-            except Exception as e:
-                continue 
-        
-        target_image_path = data_item["image_path"]
-        target_image = Image.open(read_general(target_image_path)).convert("RGB")
-        text = lige_2x1_instruction[condition] + " The content of the image is : " + data_item["prompt"]
-        return input_image, target_image, text
-
-    def chunlian_ocr_process_item(self, data_item):
-        # data_item = data_item[0]
-        target_image_path = "lc2:" + data_item["image_path"]
-        target_image = Image.open(read_general(target_image_path)).convert("RGB")
-        try:
-            if random.random() < 1:
-                input_image_path = "lc2:" + data_item["black_bg_output_path"]
-                input_image = Image.open(read_general(input_image_path)).convert("RGB")
-            else:
-                input_image = Image.new('RGB', (self.resolution, self.resolution), (0, 0, 0))
-        except Exception as e:
-            input_image = Image.new('RGB', (self.resolution, self.resolution), (0, 0, 0))
-        text = data_item["caption_en"]
-        return input_image, target_image, text
-
-    def jimeng_ocr_process_item(self, data_item):
-        # data_item = data_item[0]
-        target_image_path = "lc2:" + data_item["image_path"]
-        target_image = Image.open(read_general(target_image_path)).convert("RGB")
-        try:
-            if random.random() < 1:
-                input_image_path = "lc2:" + data_item["rendered_image_path"].replace("/rendered_images/", "/")
-                input_image = Image.open(read_general(input_image_path)).convert("RGB")
-            else:
-                input_image = Image.new('RGB', (self.resolution, self.resolution), (0, 0, 0))
-        except Exception as e:
-            input_image = Image.new('RGB', (self.resolution, self.resolution), (0, 0, 0))
-        text = data_item["caption_en"]
-        return input_image, target_image, text
-
-    def get_image_object200k(self, data_item, image_type):
-        if image_type == "target":
-            source_image_path = f"/mnt/hwfile/alpha_vl/duruoyi/subjects200k/images_all/{data_item['image_name']}.jpg"
-            image = Image.open(source_image_path).convert('RGB')
-            width, height = image.size
-            half_width = width // 2
-            target_image = image.crop((0, 0, half_width, height))
-            padding = 8
-            target_image = target_image.crop((padding, padding, half_width-padding, height-padding))
-            return [target_image]
-        elif image_type == "reference":
-            source_image_path = f"/mnt/hwfile/alpha_vl/duruoyi/subjects200k/images_all/{data_item['image_name']}.jpg"
-            image = Image.open(source_image_path).convert('RGB')
-            width, height = image.size
-            half_width = width // 2
-            ref_image = image.crop((half_width, 0, width, height))
-            padding = 8
-            ref_image = ref_image.crop((padding, padding, half_width-padding, height-padding))
-            return [ref_image]
-        elif "qwen" in image_type:
-            try:
-                if "bbox" in image_type:
-                    source_image_path = data_item["condition"]["qwen_grounding_caption"]["qwen_grounding_caption_bbox"]
-                elif "mask" in image_type:
-                    source_image_path = data_item["condition"]["qwen_grounding_caption"]["qwen_grounding_caption_mask"]
-                image = Image.open(read_general(source_image_path)).convert("RGB")
-            except Exception as e:
-                image = Image.new('RGB', (self.resolution, self.resolution), (0, 0, 0))
-            return [image]
-        elif "frontground" in image_type or "background" in image_type:
-            mask_path = data_item["condition"]["bmbg_background_removal"]
-            try:
-                # 读取mask并转换为单通道灰度图
-                mask = Image.open(read_general(mask_path)).convert("L")
-            except Exception as e:
-                mask = Image.new('L', (self.resolution, self.resolution), 0)
-                
-            # 读取并裁剪原始图像
-            source_image_path = f"/mnt/hwfile/alpha_vl/duruoyi/subjects200k/images_all/{data_item['image_name']}.jpg"
-            image = Image.open(source_image_path).convert('RGB')
-            width, height = image.size
-            half_width = width // 2
-            target_image = image.crop((0, 0, half_width, height))
-            padding = 8
-            target_image = target_image.crop((padding, padding, half_width-padding, height-padding))
-            
-            # 将mask转换为numpy数组并归一化到0-1
-            mask_np = np.array(mask).astype(np.float32) / 255.0
-            
-            # 根据image type返回前景或背景
-            if "frontground" in image_type:
-                # 前景: 保留mask为1的部分
-                mask_np = mask_np[..., None]  # 添加通道维度
-                result = Image.fromarray((np.array(target_image) * mask_np).astype(np.uint8))
-            else:
-                # 背景: 保留mask为0的部分
-                mask_np = 1 - mask_np
-                mask_np = mask_np[..., None]  # 添加通道维度
-                result = Image.fromarray((np.array(target_image) * mask_np).astype(np.uint8))
-            return [result]
-        elif image_type in style_list:
-            try:
-                if image_type == "InstantStyle":
-                    source_dict = data_item["condition"]["instantx_style"]
-                elif image_type == "ReduxStyle":
-                    source_dict = data_item["condition"]["flux_redux_style_shaping"]
-                style_idx = random.randint(0, 2)
-                style_image = source_dict["style_path"][style_idx]
-                style_image = Image.open(read_general(style_image)).convert("RGB")
-                target_image = source_dict["image_name"][style_idx]
-                target_image = Image.open(read_general(target_image)).convert("RGB")
-            except Exception as e:
-                style_image = Image.new('RGB', (self.resolution, self.resolution), (0, 0, 0))
-                target_image = Image.new('RGB', (self.resolution, self.resolution), (0, 0, 0))
-            return [style_image, target_image]
-        elif image_type in editing_list:
-            try:
-                if image_type == "DepthEdit":
-                    editing_image_path = data_item["condition"]["flux_dev_depth"]
-                elif image_type == "FrontEdit":
-                    editing_image_path = random.choice(data_item["condition"]["qwen_subject_replacement"]["image_name"])
-                editing_image = Image.open(read_general(editing_image_path)).convert('RGB')
-            except Exception as e:
-                editing_image = Image.new('RGB', (self.resolution, self.resolution), (0, 0, 0))
-            return [editing_image]
-        elif image_type in condition_list:
-            try:
-                cond_image = data_item["condition"][image_type]
-                cond_image = Image.open(read_general(cond_image)).convert("RGB")
-            except Exception as e:
-                cond_image = Image.new('RGB', (self.resolution, self.resolution), (0, 0, 0))
-            return [cond_image]
-        elif image_type in degradation_list:
-            source_image_path = f"/mnt/hwfile/alpha_vl/duruoyi/subjects200k/images_all/{data_item['image_name']}.jpg"
-            image = Image.open(source_image_path).convert('RGB')
-            width, height = image.size
-            half_width = width // 2
-            target_image = image.crop((0, 0, half_width, height))
-            padding = 8
-            target_image = target_image.crop((padding, padding, half_width-padding, height-padding))
-            deg_image, _ = add_degradation(np.array(target_image), image_type)
-            return [deg_image]
-
-                
-    def object200k_process_item(self, data_item, image_type_list=None, context_num=1):
-        text_emb = None
-        # context_num_prob = [0.3, 0.4, 0.3]  # 概率分别对应context_num=1,2,3
-        # context_num = random.choices([1, 2, 3], weights=context_num_prob)[0]
-        task_weight_prob = [task["sample_weight"] for task in task_dicts]  # 概率分别对应task_weight=0.3,1
-        block_list = []
-        if image_type_list is None:
-            while True:
-                task_type = random.choices(task_dicts, weights=task_weight_prob)[0]
-                image_type_list = random.choice(task_type["image_list"])
-                if not any(block_type in image_type_list for block_type in block_list):
-                    break
-        image_list = [[] for _ in range(context_num)]
-        for i in range(context_num):
-            for image_type in image_type_list:
-                images = self.get_image_object200k(data_item[i], image_type) 
-                images = [resize_with_aspect_ratio(image, self.resolution, aspect_ratio=1.0) for image in images]
-                image_list[i] += images
-        image_prompt_list = []
-        for image_type in image_type_list:
-            image_prompt_list += get_image_prompt(image_type)
-        image_prompt_list = [f"[IMAGE{idx+1}] {image_prompt}" for idx, image_prompt in enumerate(image_prompt_list)]
-
-        # shuffle n-1 elements
-        indices = list(range(len(image_prompt_list)-1))
-        random.shuffle(indices)
-        for i in range(context_num):
-            image_list[i][:len(image_prompt_list)-1] = [image_list[i][j] for j in indices]
-        image_prompt_list[:len(image_prompt_list)-1] = [image_prompt_list[j] for j in indices]
-
-        # 对每个图片应用transform并拼接
-        processed_images = []
-        for images in image_list:
-            transformed_row = []
-            for img in images:
-                try:
-                    transformed = self.image_transform(img)
-                except Exception as e:
-                    print("error image_type: ", image_type_list)
-                transformed_row.append(transformed)
-            row = torch.cat(transformed_row, dim=2)  # 在宽度维度上拼接
-            processed_images.append(row)
-        image = torch.cat(processed_images, dim=1)  # 在高度维度上拼接
-
-        instruction = get_layout_instruction(context_num, len(image_type_list))
-        if random.random() < 0.8:
-            condition_prompt = ", ".join(image_prompt_list[:-1])
-            target_prompt = image_prompt_list[-1]
-            instruction = instruction + " " + get_task_instruction(condition_prompt, target_prompt)
-        if random.random() < 0.8 and image_type_list[-1] == "target":
-            instruction = instruction + " " + get_content_instruction() + data_item[i]['description']['item'] + " " + data_item[i]['description']['description_0']
-        
-        return image, instruction, text_emb
-
-    def ood_process_item(self, data_item, image_type_list=None, context_num=1):
-        text_emb = None
-        if "easydrawingguides" in data_item[0]["target"]:
-            image_list = [[] for _ in range(context_num)]
-            for i in range(context_num):
-                for url in [data_item[i]["condition"][0], data_item[i]["condition"][len(data_item[i]["condition"]) // 2], data_item[i]["condition"][-1]]:
-                    cond_image = Image.open(read_general(url)).convert('RGB')
-                    image_list[i].append(cond_image)
-                target_image = Image.open(read_general(data_item[i]["target"])).convert('RGB')
-                image_list[i].append(target_image)
-                image_list[i] = [resize_with_aspect_ratio(image, self.resolution, aspect_ratio=1.0) for image in image_list[i]]
-            rows = context_num
-            cols = 4
-            instruction = f"A grid layout with {rows} rows and {cols} columns, displaying {cols*rows} images arranged side by side. Each line illustrates a painting process, from rough lines to detailed drawings."
-            print(instruction)
-
-        # 对每个图片应用transform并拼接
-        processed_images = []
-        for images in image_list:
-            transformed_row = []
-            for img in images:
-                try:
-                    transformed = self.image_transform(img)
-                except Exception as e:
-                    print("error image_type: ", image_type_list)
-                transformed_row.append(transformed)
-            row = torch.cat(transformed_row, dim=2)  # 在宽度维度上拼接
-            processed_images.append(row)
-        image = torch.cat(processed_images, dim=1)  # 在高度维度上拼接
-
-        return image, instruction, text_emb
-
-
-    # def object200k_process_item(self, data_items):
-    #     condition_list = [condition for condition in condition_list if condition != "depth_anything_v2"]
-    #     random.shuffle(condition_list)
-    #     condition_list = condition_list[:2]
-    #     cond_images_1 = []
-    #     cond_images_2 = []
-    #     target_images = []
-    #     ref_images = []
-    #     texts = []
-    #     for data_item in data_items:
-    #         # target image
-    #         target_image_path = f"/mnt/hwfile/alpha_vl/duruoyi/subjects200k/images_all/{data_item['image_name']}.jpg"
-    #         image = Image.open(target_image_path).convert('RGB')
-    #         width, height = image.size
-    #         half_width = width // 2
-    #         target_image = image.crop((0, 0, half_width, height))
-    #         ref_image = image.crop((half_width, 0, width, height))
-    #         padding = 8
-    #         target_image = target_image.crop((padding, padding, half_width-padding, height-padding))
-    #         # ref image
-    #         ref_image = ref_image.crop((padding, padding, half_width-padding, height-padding))
-    #         # condition image 1
-    #         try:
-    #             cond_image_1 = data_item["condition"][condition_list[0]]
-    #             cond_image_1 = Image.open(read_general(cond_image_1)).convert("RGB")
-    #         except Exception as e:
-    #             cond_image_1 = Image.new('RGB', (half_width-padding*2, height-padding*2), (0, 0, 0))
-    #         # condition image 2
-    #         try:
-    #             cond_image_2 = data_item["condition"][condition_list[1]]
-    #             cond_image_2 = Image.open(read_general(cond_image_2)).convert("RGB")
-    #         except Exception as e:
-    #             cond_image_2 = Image.new('RGB', (half_width-padding*2, height-padding*2), (0, 0, 0))
-    #         text = data_item['description']['description_0']
-    #         cond_images_1.append(cond_image_1)
-    #         cond_images_2.append(cond_image_2)
-    #         target_images.append(target_image)
-    #         ref_images.append(ref_image)
-    #         texts.append(text) 
-
-    #     return cond_images_1, cond_images_2, ref_images, target_images, texts
-
-    def output_pair_data(self, input_image, target_image, text, text_emb):
-        # Resize input image keeping aspect ratio
-        input_image = resize_with_aspect_ratio(input_image, self.resolution)
-        # Get input image dimensions for target image processing
-        input_w, input_h = input_image.size
-        # Center crop target image to match input aspect ratio
-        target_w, target_h = target_image.size
-        target_aspect = target_w / target_h
-        input_aspect = input_w / input_h
-        if target_aspect > input_aspect:
-            # Target is wider - crop width
-            new_target_w = int(target_h * input_aspect)
-            left = (target_w - new_target_w) // 2
-            target_image = target_image.crop((left, 0, left + new_target_w, target_h))
-        else:
-            # Target is taller - crop height  
-            new_target_h = int(target_w / input_aspect)
-            top = (target_h - new_target_h) // 2
-            target_image = target_image.crop((0, top, target_w, top + new_target_h))
-        # Resize target to match input dimensions
-        target_image = target_image.resize((input_w, input_h), Image.LANCZOS)
-        # Apply remaining transforms
-        input_image = self.image_transform(input_image)
-        target_image = self.image_transform(target_image)
-        image = torch.cat([input_image, target_image], dim=2)
-
-        return image, text, text_emb
-
-    def output_grid_data(self, cond_images_1, cond_images_2, ref_images, target_images, texts, text_emb):
-        context_num_prob = [0.3, 0.4, 0.3]  # 概率分别对应context_num=1,2,3
-        context_num = random.choices([1, 2, 3], weights=context_num_prob)[0]
-        cond_images_1, cond_images_2, ref_images, target_images, texts = cond_images_1[-context_num:], cond_images_2[-context_num:], ref_images[-context_num:], target_images[-context_num:], texts[-context_num:]
-
-        image_list = [[] for _ in range(context_num)]
-        with_condition = False
-        while not with_condition:
-            if random.random() < 0.7:
-                with_condition = True
-                for i in range(context_num):
-                    image_list[i].append(cond_images_1[i])
-            if random.random() < 0.2:
-                with_condition = True
-                for i in range(context_num):
-                    image_list[i].append(cond_images_2[i])
-            if random.random() < 0.7:
-                with_condition = True
-                for i in range(context_num):
-                    image_list[i].append(ref_images[i])
-
-        # 对每个context的图像列表进行相同顺序的打乱
-        if len(image_list[0]) > 1:  # 只有当有多个图像时才需要打乱
-            # 生成一个打乱的索引序列
-            indices = list(range(len(image_list[0])))
-            random.shuffle(indices)
-            # 按照相同的索引序列重排每个context的图像列表
-            for i in range(context_num):
-                image_list[i] = [image_list[i][j] for j in indices]
-        
-        for i in range(context_num):
-            image_list[i].append(target_images[i])
-        
-        # 对每个图片应用transform并拼接
-        processed_images = []
-        for images in image_list:
-            # 处理每一行的图片
-            transformed_row = []
-            for img in images:
-                transformed = self.image_transform(img)
-                transformed_row.append(transformed)
-            # 水平拼接同一行的图片
-            row = torch.cat(transformed_row, dim=2)  # 在宽度维度上拼接
-            processed_images.append(row)
-        # 垂直拼接所有行
-        image = torch.cat(processed_images, dim=1)  # 在高度维度上拼接
-
-        layout_instruction = f"Demonstration of the conditional image generation process, {context_num*len(images)} images form a grid with {context_num} rows and {len(images)} columns, side by side. "
-        content_instruction = f"The content of the last image is: " + texts[-1]
-        if random.random() < 0.9:
-            instruction = layout_instruction + content_instruction
-        else:
-            instruction = layout_instruction
-        return image, instruction, text_emb
-        
-
-    def process_item(self, data_item, training_mode=False, image_type_list=None, context_num=1):
-        text_emb = None
-        
-        if "input_path" in data_item:
-            input_image, target_image, text = self.pixwizard_process_item(data_item)
-            return self.output_pair_data(input_image, target_image, text, text_emb)
-        elif "condition" in data_item:
-            input_image, target_image, text = self.lige_process_item(data_item)
-            return self.output_pair_data(input_image, target_image, text, text_emb)
-        elif "bg_caption" in data_item:
-            input_image, target_image, text = self.chunlian_ocr_process_item(data_item)
-            return self.output_pair_data(input_image, target_image, text, text_emb)
-        elif "caption_en" in data_item:
-            input_image, target_image, text = self.jimeng_ocr_process_item(data_item)
-            return self.output_pair_data(input_image, target_image, text, text_emb)
-        elif isinstance(data_item, list) and "description" in data_item[0]:
-            return self.object200k_process_item(data_item, image_type_list, context_num)
-            # cond_images_1, cond_images_2, ref_images, target_images, texts = self.object200k_process_item(data_item)
-            # return self.output_grid_data(cond_images_1, cond_images_2, ref_images, target_images, texts, text_emb)
-        else:
-            raise ValueError(f"Unknown data item: {data_item}")
+from data.prefix_instruction import graph200k_task_dicts
+from data.data_reader import T2IItemProcessor
 
 
 #############################################################################
@@ -522,10 +65,12 @@ class T2IItemProcessor(ItemProcessor):
 
 
 def dataloader_collate_fn(samples):
-    image = [x[0] for x in samples]
-    prompt = [x[1] for x in samples]
-    text_emb = [x[2] for x in samples]
-    return image, prompt, text_emb
+    group_names = [x[0] for x in samples]
+    image = [x[1] for x in samples]
+    prompt = [x[2] for x in samples]
+    text_emb = [x[3] for x in samples]
+    grid_shape = [x[4] for x in samples]
+    return group_names, image, prompt, text_emb, grid_shape
 
 
 def get_train_sampler(dataset, rank, world_size, global_batch_size, max_steps, resume_step, seed):
@@ -554,7 +99,6 @@ def update_ema(ema_model, model, decay=0.95):
     assert set(ema_params.keys()) == set(model_params.keys())
 
     for name, param in model_params.items():
-        # TODO: Consider applying only to params that require_grad to avoid small numerical changes of pos_embed
         ema_params[name].mul_(decay).add_(param.data, alpha=1 - decay)
 
 
@@ -652,14 +196,6 @@ def setup_mixed_precision(args):
 
 
 def parameter_count(model):
-    """计算模型参数数量
-    
-    Args:
-        model: PyTorch模型
-        
-    Returns:
-        (total_params, trainable_params): 总参数量和可训练参数量的元组
-    """
     unique_params = {p for n, p in model.named_parameters()}
     
     total_params = sum(p.numel() for p in unique_params)
@@ -667,18 +203,22 @@ def parameter_count(model):
     
     return total_params, trainable_params
 
-def sample_random_mask(h, w, data_source="2x1_grid"):
+
+def sample_random_mask(h, w, data_source, context=True):
     w_grid, h_grid = data_source.split("_")[0].split("x")
     w_grid, h_grid = int(w_grid), int(h_grid)
+    h_grid = 1
     w_stride, h_stride = w // w_grid, h // h_grid
     mask = torch.zeros([1, 1, h, w])
-    if random.random() < 0.5:
-        w_idx = random.randint(0, w_grid - 1)
-        h_idx = random.randint(0, h_grid - 1)
-        mask[:, :, h_idx * h_stride: (h_idx + 1) * h_stride, w_idx * w_stride: (w_idx + 1) * w_stride] = 1
-    else:
-        mask[:, :, h - h_stride: h, w - w_stride: w] = 1
+    if not context:
+        if random.random() < 0.5:
+            w_idx = random.randint(0, w_grid - 1)
+            h_idx = random.randint(0, h_grid - 1)
+            mask[:, :, h_idx * h_stride: (h_idx + 1) * h_stride, w_idx * w_stride: (w_idx + 1) * w_stride] = 1
+        else:
+            mask[:, :, h - h_stride: h, w - w_stride: w] = 1
     return mask
+
 
 #############################################################################
 #                                Training Loop                              #
@@ -760,8 +300,6 @@ def main(args):
         clip = None
 
     model = load_flow_model(args.model_name, device=device_str, lora_rank=args.lora_rank)
-    # for block in model.double_blocks:
-        # block.init_cond_weights()
     
     ae = AutoencoderKL.from_pretrained(f"black-forest-labs/FLUX.1-dev", subfolder="vae", torch_dtype=torch.bfloat16).to(device)
     ae.requires_grad_(False)
@@ -791,7 +329,7 @@ def main(args):
                     ),
                     map_location="cpu",
                 ),
-                strict=True,
+                strict=False,
             )
 
             logger.info(f"Resuming ema weights from: {args.resume}")
@@ -804,7 +342,7 @@ def main(args):
                         ),
                         map_location="cpu",
                     ),
-                    strict=True,
+                    strict=False,
                 )
 
     elif args.init_from:
@@ -875,15 +413,12 @@ def main(args):
 
     logger.info(f"model:\n{model}\n")
 
-    # Setup optimizer (we used default Adam betas=(0.9, 0.999) and a constant
-    # learning rate of 1e-4 in our paper):
+    # Setup optimizer
     model_params = []
     for name, param in model.named_parameters():
-        # print(name)
         if args.training_type == "full_model":
             param.requires_grad = True
             model_params.append(param)
-        # elif "cond" in name or 'norm' in name or 'bias' in name:
         elif args.training_type == "double_block" and 'double_blocks' in name:
             param.requires_grad = True
             model_params.append(param)
@@ -935,7 +470,6 @@ def main(args):
     else:
         resume_step = 0
     
-    # default: 1000 steps, linear noise schedule
     transport = create_transport(
         "Linear",
         "velocity",
@@ -944,7 +478,7 @@ def main(args):
         None,
         snr_type=args.snr_type,
         do_shift=args.do_shift,
-    )  # default: velocity;
+    ) 
 
     # Setup data:
     logger.info(f"Creating data")
@@ -955,7 +489,7 @@ def main(args):
     num_samples = global_bsz * args.max_steps
     assert global_bsz % dp_world_size == 0, "Batch size must be divisible by data parallel world size."
     logger.info(f"Global bsz: {global_bsz} Local bsz: {local_bsz} Micro bsz: {micro_bsz}")
-    for data_source in ['2x1_grid']:
+    for data_source in ['multi_task']:
         image_transform = transforms.Compose(
             [
                 transforms.Lambda(lambda img: to_rgb_if_rgba(img)),
@@ -965,9 +499,10 @@ def main(args):
         )
         dataset = MyDataset(
             args.data_path,
-            train_res=None,
             item_processor=T2IItemProcessor(image_transform, resolution=args.grid_resolution),
             cache_on_disk=args.cache_data_on_disk,
+            task_dicts={
+                'image_grid_graph200k': graph200k_task_dicts}
         )
         logger.info(f"Dataset contains {len(dataset):,} images ({args.data_path})")
         logger.info(f"Total # samples to consume: {num_samples:,} " f"({num_samples / len(dataset):.2f} epochs)")
@@ -1007,77 +542,66 @@ def main(args):
 
     start_time = time()
     for step in range(resume_step, args.max_steps):
-        data_source = random.choices(['2x1_grid'], weights=[1.0])[0]
-        # torch.distributed.broadcast(data_source, src=0)
+        data_source = random.choices(['multi_task'], weights=[1.0])[0]
         data_pack = data_collection[data_source]
         
-        x, caps, text_emb = next(data_pack["loader_iter"])
-        x = [img.to(device, non_blocking=True) for img in x]
-        bsz = len(x)
+        group_names, x, caps, _, grid_shape = next(data_pack["loader_iter"])
+        for i in range(len(x)):
+            x[i] = [img.to(device, non_blocking=True) for img in x[i]]
 
-        task_types = [f"{img.shape[2]//args.grid_resolution}x{img.shape[1]//args.grid_resolution}_grid" for img in x]
-        # print(1, [f"{img.shape[2]}x{img.shape[1]}" for img in x])
-        # print(task_types)
-        if args.total_resolution > 0:
-            x = [resize_with_aspect_ratio(img, args.total_resolution) for img in x]
-        # print(2, [f"{img.shape[2]}x{img.shape[1]}" for img in x])
+        task_types = [f"{grid[0]}x{grid[1]}_grid" for grid in grid_shape]
 
-        if "fill" in args.model_name:
-            fill_masks = []
-            fill_conds = []
-            for img, task_type in zip(x, task_types):
-                h, w = img.shape[-2:]
-                fill_masks.append(sample_random_mask(h, w, task_type).to(img.device))
-                fill_conds.append(img * (1 - fill_masks[-1][0]))
-            fill_conds = [img.to(device, non_blocking=True) for img in fill_conds]
-            fill_masks = [mask.to(device, non_blocking=True) for mask in fill_masks]
-            with torch.no_grad():
-                fill_conds = [(ae.encode(img[None].to(ae.dtype)).latent_dist.sample()[0] - ae.config.shift_factor) * ae.config.scaling_factor for img in fill_conds]
-                fill_masks = [mask.to(torch.bfloat16) for mask in fill_masks]
-                loss_masks = [F.interpolate(1 - mask, size=(mask.shape[2]//16, mask.shape[3]//16), mode='nearest') for mask in fill_masks]
-                loss_masks = [rearrange(mask, "b c h w -> b (h w) c") for mask in loss_masks]
-                fill_masks = [rearrange(mask, "b c (h ph) (w pw) -> b (c ph pw) h w", ph=8, pw=8) for mask in fill_masks]
-                fill_masks = [rearrange(mask, "b c (h ph) (w pw) -> b (h w) (c ph pw)", ph=2, pw=2) for mask in fill_masks]
-            fill_conds = [cond.to(torch.bfloat16) for cond in fill_conds]
-            fill_conds = [rearrange(cond.unsqueeze(0), "b c (h ph) (w pw) -> b (h w) (c ph pw)", ph=2, pw=2) for cond in fill_conds]
+        # prepare data
+        fill_masks = []
+        fill_conds = []
+        for i, (img, task_type, group_name) in enumerate(zip(x, task_types, group_names)):
+            fill_mask = []
+            fill_cond = []
+            for j, sub_img in enumerate(img):
+                h, w = sub_img.shape[-2:]
+                fill_mask.append(sample_random_mask(h, w, task_type, context=j < len(img) - 1).to(sub_img.device))
+                fill_cond.append(sub_img * (1 - fill_mask[-1][0]))
+                    
+            fill_cond = [img.to(device, non_blocking=True) for img in fill_cond]
+            fill_mask = [mask.to(device, non_blocking=True) for mask in fill_mask]
+            fill_conds.append(fill_cond)
+            fill_masks.append(fill_mask)
+        with torch.no_grad():
+            for i in range(len(fill_conds)):
+                fill_conds[i] = [(ae.encode(img[None].to(ae.dtype)).latent_dist.sample()[0] - ae.config.shift_factor) * ae.config.scaling_factor for img in fill_conds[i]]
+                fill_masks[i] = [mask.to(torch.bfloat16) for mask in fill_masks[i]]
+                fill_masks[i] = [rearrange(mask, "b c (h ph) (w pw) -> b (c ph pw) h w", ph=8, pw=8) for mask in fill_masks[i]]
+                fill_masks[i] = [rearrange(mask, "b c (h ph) (w pw) -> b (h w) (c ph pw)", ph=2, pw=2) for mask in fill_masks[i]]
+            
+        for i in range(len(fill_conds)):
+            fill_conds[i] = [cond.to(torch.bfloat16) for cond in fill_conds[i]]
+            fill_conds[i] = [rearrange(cond.unsqueeze(0), "b c (h ph) (w pw) -> b (h w) (c ph pw)", ph=2, pw=2) for cond in fill_conds[i]]
+            
+            fill_conds[i] = torch.cat(fill_conds[i], dim=1)
+            fill_masks[i] = torch.cat(fill_masks[i], dim=1)
 
-            max_len = max([cond.shape[1] for cond in fill_conds])
-            # print(max([cond.shape[1] for cond in fill_conds]), [mask.shape[1] for mask in fill_masks])
-            fill_conds = [F.pad(cond, (0, 0, 0, max_len - cond.shape[1])) for cond in fill_conds]
-            fill_masks = [F.pad(mask, (0, 0, 0, max_len - mask.shape[1])) for mask in fill_masks]
-            loss_masks = [F.pad(mask, (0, 0, 0, max_len - mask.shape[1])) for mask in loss_masks]
+        max_len = max([cond.shape[1] for cond in fill_conds])
+        fill_conds = [F.pad(cond, (0, 0, 0, max_len - cond.shape[1])) for cond in fill_conds]
+        fill_masks = [F.pad(mask, (0, 0, 0, max_len - mask.shape[1])) for mask in fill_masks]
 
-            fill_conds = torch.cat(fill_conds, dim=0)
-            fill_masks = torch.cat(fill_masks, dim=0)
-            loss_masks = torch.cat(loss_masks, dim=0)
-            img_cond = torch.cat((fill_conds, fill_masks), dim=-1)
-            # print(img_cond.shape)
+        fill_conds = torch.cat(fill_conds, dim=0)
+        fill_masks = torch.cat(fill_masks, dim=0)
+        img_cond = torch.cat((fill_conds, fill_masks), dim=-1)
 
         dataload_time = time()
         
         with torch.no_grad():
-            # Map input images to latent space + normalize latents:
-            # x = [(ae.tiled_encode(img[None].to(ae.dtype)).latent_dist.sample()[0] - ae.config.shift_factor) * ae.config.scaling_factor for img in x]
-            x = [(ae.encode(img[None].to(ae.dtype)).latent_dist.sample()[0] - ae.config.shift_factor) * ae.config.scaling_factor for img in x]
+            for i in range(len(x)):
+                x[i] = [(ae.encode(img[None].to(ae.dtype)).latent_dist.sample()[0] - ae.config.shift_factor) * ae.config.scaling_factor for img in x[i]]
             
         with torch.no_grad():
             inp = prepare_modified(t5=t5, clip=clip, img=x, prompt=caps, proportion_empty_prompts=args.caption_dropout_prob)
-
-        # Prepare text embedding if needed:
-        with torch.no_grad():
-            vec_uncond = clip([""] * bsz)
-            txt_uncond = t5([""] * bsz)
-            txt_uncond_ids = torch.zeros(bsz, txt_uncond.shape[1], 3, device=txt_uncond.device)
-            txt_uncond_mask = torch.ones(bsz, txt_uncond.shape[1], device=txt_uncond.device, dtype=torch.int32)
 
         encode_time = time()
 
         loss_item = 0.0
         diff_loss_item = 0.0
         opt.zero_grad()
-
-        if args.masking_loss:
-            inp["img_mask"] = inp["img_mask"] * loss_masks.squeeze(-1)
         
         for mb_idx in range((data_pack["local_bsz"] - 1) // data_pack["micro_bsz"] + 1):
             mb_st = mb_idx * data_pack["micro_bsz"]
@@ -1095,11 +619,7 @@ def main(args):
                 img_mask=inp["img_mask"][mb_st:mb_ed],
                 txt_mask=inp["txt_mask"][mb_st:mb_ed],
             )
-            extra_kwargs = {}
-            if "fill" in args.model_name:
-                extra_kwargs["cond"] = img_cond[mb_st:mb_ed]
-            else:
-                extra_kwargs["cond"] = None
+            extra_kwargs = {"cond": img_cond[mb_st:mb_ed]}
 
             with {
                 "bf16": torch.cuda.amp.autocast(dtype=torch.bfloat16),
@@ -1142,7 +662,6 @@ def main(args):
         metrics["TrainSecs/Step"].update(end_time - encode_time)
         metrics["Secs/Step"].update(end_time - start_time)
         metrics["Imgs/Sec"].update(data_pack["global_bsz"] / (end_time - start_time))
-        metrics["grad_norm"].update(grad_norm)
         if (step + 1) % args.log_every == 0:
             # Measure training speed:
             torch.cuda.synchronize()
@@ -1168,6 +687,11 @@ def main(args):
                 FullStateDictConfig(rank0_only=True, offload_to_cpu=True),
             ):
                 consolidated_model_state_dict = model.state_dict()
+                consolidated_model_state_dict_lora = {}
+    
+                for key, value in consolidated_model_state_dict.items():
+                    if "lora_A" in key or "lora_B" in key:
+                        consolidated_model_state_dict_lora[key] = value
                 if fs_init.get_data_parallel_rank() == 0:
                     consolidated_fn = (
                         "consolidated."
@@ -1176,7 +700,7 @@ def main(args):
                         ".pth"
                     )
                     torch.save(
-                        consolidated_model_state_dict,
+                        consolidated_model_state_dict_lora,
                         os.path.join(checkpoint_path, consolidated_fn),
                     )
             dist.barrier()
@@ -1190,6 +714,12 @@ def main(args):
                     FullStateDictConfig(rank0_only=True, offload_to_cpu=True),
                 ):
                     consolidated_ema_state_dict = model_ema.state_dict()
+                    consolidated_ema_state_dict_lora = {}
+    
+                for key, value in consolidated_ema_state_dict.items():
+                    if "lora_A" in key or "lora_B" in key:
+                        consolidated_ema_state_dict_lora[key] = value
+
                     if fs_init.get_data_parallel_rank() == 0:
                         consolidated_ema_fn = (
                             "consolidated_ema."
@@ -1198,7 +728,7 @@ def main(args):
                             ".pth"
                         )
                         torch.save(
-                            consolidated_ema_state_dict,
+                            consolidated_ema_state_dict_lora,
                             os.path.join(checkpoint_path, consolidated_ema_fn),
                         )
                 dist.barrier()
@@ -1221,29 +751,21 @@ def main(args):
             dist.barrier()
             logger.info(f"Saved training arguments to {checkpoint_path}.")
 
-    model.eval()  # important! This disables randomized embedding dropout
-    # do any sampling/FID calculation/etc. with ema (or model) in eval mode ...
+    model.eval()
 
     logger.info("Done!")
     cleanup()
 
 
 if __name__ == "__main__":
-    # Default args here will train DiT_Llama2_7B_patch2 with the
-    # hyperparameters we used in our paper (except training iters).
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", type=str, required=True)
     parser.add_argument("--data_path", type=str, required=True)
     parser.add_argument("--cache_data_on_disk", default=False, action="store_true")
     parser.add_argument("--results_dir", type=str, required=True)
     parser.add_argument("--max_steps", type=int, default=100_000, help="Number of training steps.")
-    # parser.add_argument("--global_bsz_256", type=int, default=256)
-    # parser.add_argument("--micro_bsz_256", type=int, default=1)
-    # parser.add_argument("--image_size", type=int, default=512)
     parser.add_argument("--global_bsz", type=int, default=256)
     parser.add_argument("--micro_bsz", type=int, default=1)
-    # parser.add_argument("--global_bsz_1024", type=int, default=256)
-    # parser.add_argument("--micro_bsz_1024", type=int, default=1)
     parser.add_argument("--load_t5", action="store_true")
     parser.add_argument("--load_clip", action="store_true")
     parser.add_argument("--global_seed", type=int, default=0)
@@ -1299,19 +821,12 @@ if __name__ == "__main__":
         help="Do dynamic time shifting",
     )
     parser.add_argument(
-        "--task_list",
-        type=str,
-        default="2x1_grid",
-        help="Comma-separated list of task for training."
-    )
-    parser.add_argument(
         "--task_probs",
         type=str,
         default="1.0",
         help="Comma-separated list of probabilities for sampling tasks."
     )
     parser.add_argument("--lora_rank", type=int, default=128)
-    parser.add_argument("--total_resolution", type=int, default=1024)
     parser.add_argument("--grid_resolution", type=int, default=512)
     parser.add_argument("--masking_loss", action="store_true")
     parser.add_argument("--full_model", action="store_true")
@@ -1321,6 +836,5 @@ if __name__ == "__main__":
     parser.add_argument("--use_wandb", action="store_true")
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()
-    args.task_list = args.task_list.split(",")
     args.task_probs = [float(prob) for prob in args.task_probs.split(",")]
     main(args)

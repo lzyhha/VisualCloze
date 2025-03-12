@@ -1,0 +1,4 @@
+META:
+  -
+    path: "dataset/test/data.json"
+    type: 'image_grid_graph200k'

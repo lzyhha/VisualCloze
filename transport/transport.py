@@ -162,6 +162,7 @@ class Transport:
                 )
             else:
                 if "img_mask" in model_kwargs:
+                    # print("loss", model_output.shape, model_kwargs["img_mask"].shape, model_kwargs["img_mask"].sum(dim=1), model_kwargs["img_mask"].sum())
                     B, L, D = model_output.shape
                     img_mask = model_kwargs["img_mask"]
                     mask_loss = (model_output - ut) * img_mask.unsqueeze(-1)  # [B, L, D]
@@ -367,6 +368,7 @@ class Sampler:
         reverse=False,
         do_shift=True,
         time_shifting_factor=None, 
+        strength=None
     ):
         """returns a sampling function with given ODE settings
         Args:
@@ -389,6 +391,9 @@ class Sampler:
             reverse=reverse,
             last_step_size=0.0,
         )
+        
+        if strength is not None:
+            t0 = (t1 - t0) * strength + t0
 
         _ode = ode(
             drift=drift,

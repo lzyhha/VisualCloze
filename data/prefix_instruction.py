@@ -1,32 +1,8 @@
 import random
 
-condition_list = ["canny", "depth_anything_v2", "hed", "midas_depth_normal", "mlsd", "openpose", "sam2_mask", "uniformer"]
-lige_2x1_instruction = {
-    "canny": "A pair of side by side images, illustrating a canny edge based image generation task.",
-    "depth_anything_v2": "A pair of side by side images, illustrating a depth based image generation task.",
-    "hed": "A pair of side by side images, illustrating a hed edge based image generation task.",
-    "midas_depth_normal": "A pair of side by side images, illustrating a midas normal map based image generation task.",
-    "mlsd": "A pair of side by side images, illustrating a mlsd line based image generation task.",
-    "openpose": "A pair of side by side images, illustrating a human pose key point based image generation task.",
-    "sam2_mask": "A pair of side by side images, illustrating a segmentation mask based image generation task.",
-    "uniformer": "A pair of side by side images, illustrating a segmentation mask based image generation task.",
-}
-
-lige_3x1_instruction = {
-    "canny": "Three side by side images, illustrating an image generation task with canny edge condition and subject reference.",
-    "depth_anything_v2": "Three side by side images, illustrating an image generation task with depth condition and subject reference.",
-    "hed": "Three side by side images, illustrating an image generation task with hed edge condition and subject reference.",
-    "midas_depth_normal": "Three side by side images, illustrating an image generation task with midas normal map condition and subject reference.",
-    "mlsd": "Three side by side images, illustrating an image generation task with mlsd line condition and subject reference.",
-    "openpose": "Three side by side images, illustrating an image generation task with human pose key point condition and subject reference.",
-    "sam2_mask": "Three side by side images, illustrating an image generation task with segmentation mask condition and subject reference.",
-    "uniformer": "Three side by side images, illustrating an image generation task with segmentation mask condition and subject reference.",
-}
-
-#########
-condition_list = ["canny", "depth_anything_v2", "hed", "midas_depth_normal", "mlsd", "openpose", "sam2_mask", "uniformer", "qwen_mask", "qwen_bbox", "frontground", "background"]
+condition_list = ["canny", "depth", "hed", "normal", "mlsd", "openpose", "sam2_mask", "mask", "foreground", "background", "uniformer"]
 style_list = ["InstantStyle", "ReduxStyle"]
-editing_list = ["DepthEdit", "FrontEdit"]
+editing_list = ["DepthEdit", "FillEdit"]
 degradation_list = [
     # blur
     "blur",
@@ -74,6 +50,7 @@ degradation_list = [
     "Frost",
     ]
 
+
 def get_image_prompt(image_type):
     image_prompts = {
         "target": [
@@ -119,7 +96,7 @@ def get_image_prompt(image_type):
             "canny map with sharp white edges and dark voids",
             "edge map revealing white outlines of object shapes",
         ],
-        "depth_anything_v2": [
+        "depth": [
             "depth map showing gray-scale object contours",
             "gray-toned depth map with layered outlines",
             "depth map featuring gradient-gray surfaces",
@@ -143,7 +120,7 @@ def get_image_prompt(image_type):
             "hed map with flowing natural object outlines",
             "edge map revealing smooth interconnected shapes",
         ],
-        "midas_depth_normal": [
+        "normal": [
             "normal map showing surface orientation details",
             "rgb-coded normal map for 3D lighting",
             "normal map with encoded surface normals",
@@ -204,7 +181,7 @@ def get_image_prompt(image_type):
             "objects segmented as colored blocks by uniformer",
             "uniformer map with objects as solid color areas",
         ],
-        "qwen_mask": [
+        "mask": [
             "Color-coded objects in open-world segmentation",
             "Distinct colors marking different objects",
             "Objects highlighted as unique color patches",
@@ -216,19 +193,7 @@ def get_image_prompt(image_type):
             "Color-coded segmentation of diverse items",
             "Objects mapped as distinct colored areas",
         ],
-        "qwen_bbox": [
-            "Bounding boxes on solid background",
-            "Rectangular boxes marking object locations",
-            "Objects outlined by bbox on plain background",
-            "Bbox highlighting subjects on solid color",
-            "Rectangles showing object positions on plain backdrop",
-            "Bbox-detected objects on uniform background",
-            "Solid background with bbox around targets",
-            "Objects framed by bbox on plain canvas",
-            "Bbox annotations on monochrome background",
-            "Rectangular frames on solid color for object detection",
-        ],
-        "frontground": [
+        "foreground": [
             "Foreground on solid color canvas",
             "Image with foreground on plain backdrop",
             "Foreground placed on monochrome background",
@@ -295,7 +260,7 @@ def get_image_prompt(image_type):
             "a high-quality image with exceptional detail",
             "a photo realistic image",
         ],
-        "FrontEdit": [
+        "FillEdit": [
             "a high-quality image",
             "an aesthetically pleasing photograph",
             "a high-resolution image",
@@ -710,6 +675,8 @@ def get_image_prompt(image_type):
     }
     if image_type in style_list:
         return [random.choice(image_prompts["style_source"]), random.choice(image_prompts["style_target"])]
+    elif image_type == 'clothing':
+        return [random.choice(image_prompts["clothing"]), random.choice(image_prompts["fullbody"])]
     else:
         return [random.choice(image_prompts[image_type])]
 
@@ -729,6 +696,7 @@ def get_layout_instruction(cols, rows):
     ]
     return random.choice(layout_instruction)
 
+
 def get_task_instruction(condition_prompt, target_prompt):
     task_instruction = [
         f"Each row outlines a logical process, starting from {condition_prompt}, to achieve {target_prompt}.",
@@ -743,6 +711,7 @@ def get_task_instruction(condition_prompt, target_prompt):
         f"In each row, a logical task is demonstrated to achieve {target_prompt} based on {condition_prompt}.",
     ]
     return random.choice(task_instruction)
+
 
 def get_content_instruction():
     content_instruction = [
@@ -759,22 +728,22 @@ def get_content_instruction():
     ]
     return random.choice(content_instruction)
 
-task_dicts = [
+
+graph200k_task_dicts = [
     {
         "task_name": "conditional generation",
         "sample_weight": 1,
         "image_list": [
             ["canny", "target"],
-            ["depth_anything_v2", "target"],
+            ["depth", "target"],
             ["hed", "target"],
-            ["midas_depth_normal", "target"],
+            ["normal", "target"],
             ["mlsd", "target"],
             ["openpose", "target"],
             ["sam2_mask", "target"],
             ["uniformer", "target"],
-            ["qwen_mask", "target"],
-            ["qwen_bbox", "target"],
-            ["frontground", "target"],
+            ["mask", "target"],
+            ["foreground", "target"],
             ["background", "target"],
         ],
     },
@@ -783,15 +752,14 @@ task_dicts = [
         "sample_weight": 1,
         "image_list": [
             ["reference", "canny", "target"],
-            ["reference", "depth_anything_v2", "target"],
+            ["reference", "depth", "target"],
             ["reference", "hed", "target"],
-            ["reference", "midas_depth_normal", "target"],
+            ["reference", "normal", "target"],
             ["reference", "mlsd", "target"],
             ["reference", "openpose", "target"],
             ["reference", "sam2_mask", "target"],
             ["reference", "uniformer", "target"],
-            ["reference", "qwen_mask", "target"],
-            ["reference", "qwen_bbox", "target"],
+            ["reference", "mask", "target"],
             ["reference", "background", "target"],
         ],
     },
@@ -801,26 +769,24 @@ task_dicts = [
         "image_list": [
             # instant style
             ["canny", "InstantStyle"],
-            ["depth_anything_v2", "InstantStyle"],
+            ["depth", "InstantStyle"],
             ["hed", "InstantStyle"],
-            ["midas_depth_normal", "InstantStyle"],
+            ["normal", "InstantStyle"],
             ["mlsd", "InstantStyle"],
             ["openpose", "InstantStyle"],
             ["sam2_mask", "InstantStyle"],
             ["uniformer", "InstantStyle"],
-            ["qwen_mask", "InstantStyle"],
-            ["qwen_bbox", "InstantStyle"],
+            ["mask", "InstantStyle"],
             # redux style
             ["canny", "ReduxStyle"],
-            ["depth_anything_v2", "ReduxStyle"],
+            ["depth", "ReduxStyle"],
             ["hed", "ReduxStyle"],
-            ["midas_depth_normal", "ReduxStyle"],
+            ["normal", "ReduxStyle"],
             ["mlsd", "ReduxStyle"],
             ["openpose", "ReduxStyle"],
             ["sam2_mask", "ReduxStyle"],
             ["uniformer", "ReduxStyle"],
-            ["qwen_mask", "ReduxStyle"],
-            ["qwen_bbox", "ReduxStyle"],
+            ["mask", "ReduxStyle"],
         ],
     },
     {
@@ -851,15 +817,14 @@ task_dicts = [
         "sample_weight": 1,
         "image_list": [
             ["reference", "canny", "InstantStyle"],
-            ["reference", "depth_anything_v2", "InstantStyle"],
+            ["reference", "depth", "InstantStyle"],
             ["reference", "hed", "InstantStyle"],
-            ["reference", "midas_depth_normal", "InstantStyle"],
+            ["reference", "normal", "InstantStyle"],
             ["reference", "mlsd", "InstantStyle"],
             ["reference", "openpose", "InstantStyle"],
             ["reference", "sam2_mask", "InstantStyle"],
             ["reference", "uniformer", "InstantStyle"],
-            ["reference", "qwen_mask", "InstantStyle"],
-            ["reference", "qwen_bbox", "InstantStyle"],
+            ["reference", "mask", "InstantStyle"],
         ],
     },
     {
@@ -867,7 +832,7 @@ task_dicts = [
         "sample_weight": 1,
         "image_list": [
             ["DepthEdit", "target"],
-            ["FrontEdit", "target"],
+            ["FillEdit", "target"],
         ],
     },
     {
@@ -875,7 +840,7 @@ task_dicts = [
         "sample_weight": 1,
         "image_list": [
             ["reference", "DepthEdit", "target"],
-            ["reference", "FrontEdit", "target"],
+            ["reference", "FillEdit", "target"],
         ],
     },
     {
@@ -883,9 +848,9 @@ task_dicts = [
         "sample_weight": 1,
         "image_list": [
             ["target", "canny"],
-            ["target", "depth_anything_v2"],
+            ["target", "depth"],
             ["target", "hed"],
-            ["target", "midas_depth_normal"],
+            ["target", "normal"],
             ["target", "mlsd"],
             ["target", "openpose"],
             ["target", "sam2_mask"],
@@ -1005,21 +970,37 @@ task_dicts = [
     }
 ]
 
+
 test_task_dicts = [
     {
         "task_name": "conditional generation",
         "sample_weight": 1,
         "image_list": [
-            ["depth_anything_v2", "target"],
+            ["canny", "target"],
+            ["depth", "target"],
+            ["hed", "target"],
+            ["normal", "target"],
+            ["mlsd", "target"],
             ["openpose", "target"],
+            ["sam2_mask", "target"],
+            ["uniformer", "target"],
+            ["mask", "target"],
+            ["foreground", "target"],
+            ["background", "target"],
+        ],
+    },
+    {
+        "task_name": "image generation with reference",
+        "sample_weight": 1,
+        "image_list": [
+            ["reference", "target"],
         ],
     },
     {
         "task_name": "conditional generation with reference",
         "sample_weight": 1,
         "image_list": [
-            # order 1
-            ["reference", "depth_anything_v2", "target"],
+            ["reference", "depth", "target"],
             ["reference", "openpose", "target"],
         ],
     },
@@ -1034,7 +1015,7 @@ test_task_dicts = [
         "task_name": "dense prediction",
         "sample_weight": 1,
         "image_list": [
-            ["target", "depth_anything_v2"],
+            ["target", "depth"],
             ["target", "openpose"],
         ],
     },
@@ -1068,7 +1049,7 @@ test_task_dicts = [
         "sample_weight": 1,
         "image_list": [
             ["reference", "DepthEdit", "target"],
-            ["reference", "FrontEdit", "target"],
+            ["reference", "FillEdit", "target"],
         ],
     },
     {
@@ -1080,32 +1061,26 @@ test_task_dicts = [
             ["reference", "InstantStyle"],
         ],
     },
+    {
+        "task_name": "style transfer with condition",
+        "sample_weight": 1,
+        "image_list": [
+            ["reference", "canny", "InstantStyle"],
+            ["reference", "depth", "InstantStyle"],
+            ["reference", "hed", "InstantStyle"],
+            ["reference", "normal", "InstantStyle"],
+            ["reference", "mlsd", "InstantStyle"],
+            ["reference", "openpose", "InstantStyle"],
+            ["reference", "sam2_mask", "InstantStyle"],
+            ["reference", "uniformer", "InstantStyle"],
+            ["reference", "mask", "InstantStyle"],
+        ],
+    },
+    {
+        "task_name": "subject extraction", 
+        "sample_weight": 1,
+        "image_list": [
+            ["target", "reference"],
+        ],
+    },
 ]
-
-def get_task_amount(task_dicts):
-    total_task_amount = 0
-    for task_dict in task_dicts:
-        task_amount = len(task_dict["image_list"])
-        total_task_amount += task_amount
-        print(f"{task_dict['task_name']}: {task_amount}")
-    print(f"Total task amount: {total_task_amount}")
-
-
-def show_task_instruction(task_dicts):
-    for task_dict in task_dicts:
-        for image_list in task_dict["image_list"]:
-            row_num = 1
-            # layout instruction
-            instruction = get_layout_instruction(row_num, len(image_list))
-            # task instruction
-            if len(image_list) > 2:
-                condition_prompt = ", ".join([get_image_prompt(image_type) for image_type in image_list[:-2]]) + ", and " + get_image_prompt(image_list[-2])
-            else:
-                condition_prompt = get_image_prompt(image_list[0])
-            target_prompt = get_image_prompt(image_list[-1])
-            instruction = instruction + " " + get_task_instruction(condition_prompt, target_prompt)
-            # content instruction
-            instruction = instruction + " " + get_content_instruction() + "..."
-            print(instruction)
-
-# show_task_instruction(task_dicts)
