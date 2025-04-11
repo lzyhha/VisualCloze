@@ -196,7 +196,7 @@ If you find VisualCloze useful for your research and applications, please cite u
 ```bibtex
 @article{li2025visualcloze,
   title={VisualCloze : A Universal Image Generation Framework via Visual In-Context Learning},
-  author={Li, Zhong-Yu and Du, ruoyi and Yan, Juncheng and Zhuo, Le and Li, Zhen and Gao, Peng and Ma, Zhanyu and Cheng, Ming-Ming},
+  author={Li, Zhong-Yu and Du, Ruoyi and Yan, Juncheng and Zhuo, Le and Li, Zhen and Gao, Peng and Ma, Zhanyu and Cheng, Ming-Ming},
   journal={arXiv preprint arxiv:},
   year={2025}
 }
