@@ -3,7 +3,7 @@
 Downloading VisualCloze repo from github:
 
 ```bash
-git clone xxx
+git clone https://github.com/lzyhha/VisualCloze
 ```
 
 ### 1. Create a conda environment and install PyTorch

@@ -10,7 +10,7 @@
 
 <div align="center">
 
-[[Paper]()] &emsp; [[Online Demo]()] &emsp; [[Project Page]()] &emsp; <br>[[🤗 Model Card]()] &emsp; [[🤗 Dataset Card]()] <br>
+[[Paper](https://arxiv.org/abs/2504.07960)] &emsp; [[Online Demo](https://huggingface.co/spaces/VisualCloze/VisualCloze)] &emsp; [[Project Page](https://visualcloze.github.io/)] &emsp; <br>[[🤗 Model Card](https://huggingface.co/VisualCloze/VisualCloze)] &emsp; [[🤗 Dataset Card](https://huggingface.co/datasets/VisualCloze/Graph200K)] <br>
 
 
 </div>
@@ -25,7 +25,7 @@ An in-context learning based universal image generation framework.
 
 ## 🔥 **Examples**
 
-[![Huggingface VisualCloze](https://img.shields.io/static/v1?label=Demo&message=Huggingface%20Gradio&color=orange)](xx)
+[![Huggingface VisualCloze](https://img.shields.io/static/v1?label=Demo&message=Huggingface%20Gradio&color=orange)](https://huggingface.co/spaces/VisualCloze/VisualCloze)
 
 ### Supporting various in-domain tasks
 ![Supporting various in-domain tasks](https://github.com/lzyhha/VisualCloze/blob/main/figures/seen.jpg)
@@ -54,19 +54,19 @@ i.e.,  reverse-engineering a set of conditions from a target.
 
 ## 🔧 Dependencies and Installation
 
-See [installation structions](docs/INSTALL.md) for details.
+See [installation structions](https://github.com/lzyhha/VisualCloze/blob/main/docs/INSTALL.md) for details.
 
 ## ⏬ Dataset
 
-We have released the Graph200K dataset in [huggingface](). 
-To use it in VisualCloze, we preprocess it using the [script](). 
+We have released the Graph200K dataset in [huggingface](https://huggingface.co/datasets/VisualCloze/Graph200K). 
+To use it in VisualCloze, we preprocess it using the [script](https://github.com/lzyhha/VisualCloze/blob/main/processing.py). 
 
-Please refer to [dataset](docs/DATASET.md) for more details.
+Please refer to [dataset](https://github.com/lzyhha/VisualCloze/blob/main/docs/DATASET.md) for more details.
 
 ## 🚀 Training
 
-After preprocessing the Graph200K dataset as shown in [dataset](docs/DATASET.md), 
-please setting the `path` item in [visualcloze.yaml](configs/data/visualcloze.yaml) as the generated json file. (todo)
+After preprocessing the Graph200K dataset as shown in [dataset](https://github.com/lzyhha/VisualCloze/blob/main/docs/DATASET.md), 
+please setting the `path` item in [visualcloze.yaml](https://github.com/lzyhha/VisualCloze/blob/main/configs/data/visualcloze.yaml) as the generated json file. (todo)
 
 ```yaml
 META:
@@ -75,7 +75,7 @@ META:
     type: 'image_grid_graph200k'
 ```
 
-Then, you can train the model using a script like [exps/train.sh](exps/train.sh). 
+Then, you can train the model using a script like [exps/train.sh](https://github.com/lzyhha/VisualCloze/blob/main/exps/train.sh). 
 You should personalize `gpu_num`, `batch_size`, and `micro_batch_size` according to your device. 
 
 ```bash
@@ -86,8 +86,8 @@ bash exps/train.sh
 
 ### 1. Download Models
 
-In [huggingface](xx), 
-we release [visualcloze-384-lora]() and [visualcloze-512-lora](), 
+In [huggingface](https://huggingface.co/VisualCloze/VisualCloze), 
+we release [visualcloze-384-lora](https://huggingface.co/VisualCloze/VisualCloze/blob/main/visualcloze-384-lora.pth) and [visualcloze-512-lora](https://huggingface.co/VisualCloze/VisualCloze/blob/main/visualcloze-512-lora.pth), 
 trained with the grid resolution of 384 and 512, respectively. 
 **<span style="color:hotpink">The grid resolution means that each image is resized to the area of the square of it before concatenating images into a grid layout.</span>**
 
@@ -129,9 +129,9 @@ you can increase `upsampling noise` or even set it to 1 to disable SDEdit.
 
 ### 3. Custom Sampling
 
-We have implement a pipeline of the visualcloze in [visualcloze.py](visualcloze.py). 
+We have implement a pipeline of the visualcloze in [visualcloze.py](https://github.com/lzyhha/VisualCloze/blob/main/visualcloze.py). 
 This can be easily used for custom reasoning. 
-In [inference.py](inference.py), we show an example of usage on virtual try-on.
+In [inference.py](https://github.com/lzyhha/VisualCloze/blob/main/inference.py), we show an example of usage on virtual try-on.
 
 ```python
 from visualcloze import VisualClozeModel
@@ -186,7 +186,7 @@ To generate images on the test set of the Graph200K, run the following command:
 bash exp/sample.sh
 ```
 
-You can modify `test_task_dicts` in [prefix_instruction.py](data/prefix_instruction.py) to customize your required tasks.
+You can modify `test_task_dicts` in [prefix_instruction.py](https://github.com/lzyhha/VisualCloze/blob/main/data/prefix_instruction.py) to customize your required tasks.
 
 
 # 📚 Citation
