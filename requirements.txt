@@ -1,0 +1,17 @@
+torchdiffeq
+numpy
+diffusers
+fairscale
+accelerate
+transformers
+huggingface-hub
+tensorboard
+gradio
+click
+opencv-python
+scikit-image
+numba
+scipy
+tqdm
+einops
+sentencepiece
