@@ -66,7 +66,7 @@ Please refer to [dataset](https://github.com/lzyhha/VisualCloze/blob/main/docs/D
 ## 🚀 Training
 
 After preprocessing the Graph200K dataset as shown in [dataset](https://github.com/lzyhha/VisualCloze/blob/main/docs/DATASET.md), 
-please setting the `path` item in [visualcloze.yaml](https://github.com/lzyhha/VisualCloze/blob/main/configs/data/visualcloze.yaml) as the generated json file. (todo)
+please setting the `path` item in [visualcloze.yaml](https://github.com/lzyhha/VisualCloze/blob/main/configs/data/visualcloze.yaml) as the generated json file.
 
 ```yaml
 META:
@@ -104,7 +104,7 @@ huggingface-cli download --resume-download VisualCloze/VisualCloze --local-dir /
 ```
 
 or using git for cloning the model you want to use:
-(todo)
+
 ```bash
 git clone https://huggingface.co/VisualCloze/VisualCloze
 ```
