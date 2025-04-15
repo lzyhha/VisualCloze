@@ -82,6 +82,8 @@ You should personalize `gpu_num`, `batch_size`, and `micro_batch_size` according
 bash exps/train.sh
 ```
 
+For training, we use 8 A100 GPUs with a batch size of 2, requiring 50GB of memory with Fully Sharded Data Parallelism. And gradient accumulation can be employed to support a larger batch size. Additionally, 40GB GPUs can also be used when the batch size is set to 1.
+
 ## 💻 Inference
 
 ### 1. Download Models
