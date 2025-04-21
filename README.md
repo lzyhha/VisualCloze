@@ -197,7 +197,7 @@ image_result = pipe(
 image_result.save("visualcloze.png")
 ```
 
-### 3. Custom Sampling without Diffusers
+### 4. Custom Sampling without Diffusers
 
 We also implement a pipeline of the visualcloze in [visualcloze.py of this repository](https://github.com/lzyhha/VisualCloze/blob/main/visualcloze.py). 
 This can be easily used for custom reasoning. 
@@ -247,7 +247,7 @@ python inference.py --model_path "path to downloaded visualcloze-384-lora.pth" -
 python inference.py --model_path "path to downloaded visualcloze-512-lora.pth" --resolution 512
 ```
 
-### 4. Inference on Graph200K test set
+### 5. Inference on Graph200K test set
 
 To generate images on the test set of the Graph200K, run the following command:
 ```bash
