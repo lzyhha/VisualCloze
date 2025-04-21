@@ -10,12 +10,17 @@
 
 <div align="center">
 
-[[Paper](https://arxiv.org/abs/2504.07960)] &emsp; [[Online Demo](https://huggingface.co/spaces/VisualCloze/VisualCloze)] &emsp; [[Project Page](https://visualcloze.github.io/)] &emsp; <br>[[🤗 Model Card](https://huggingface.co/VisualCloze/VisualCloze)] &emsp; [[🤗 Dataset Card](https://huggingface.co/datasets/VisualCloze/Graph200K)] <br>
+[[Paper](https://arxiv.org/abs/2504.07960)] &emsp; [[Online Demo](https://huggingface.co/spaces/VisualCloze/VisualCloze)] &emsp; [[Project Page](https://visualcloze.github.io/)] 
+<br>[[🤗 Model Card (<strong><span style="color:hotpink">Diffusers</span></strong>)](https://huggingface.co/VisualCloze/VisualClozePipeline-384)] &emsp; [[🤗 Model Card (LoRA](https://huggingface.co/VisualCloze/VisualCloze)] <br> [[🤗 Dataset Card](https://huggingface.co/datasets/VisualCloze/Graph200K)] <br>
 
 
 </div>
 
-## 🌠 Key Features:
+## 📰 News
+- [2025-4-21] 👋👋👋 We have implemented a version of [diffusers](https://github.com/lzyhha/diffusers/tree/main/src/diffusers/pipelines/visualcloze) that makes it easier to use the model through **pipelines** of the diffusers. For usage guidance, please refer to the [Model Card](https://huggingface.co/VisualCloze/VisualClozePipeline-384).
+
+
+## 🌠 Key Features
 
 An in-context learning based universal image generation framework.
 1. Support various in-domain tasks. 🔥 [Examples](#supporting-various-in-domain-tasks) 
@@ -122,16 +127,79 @@ python app.py --model_path "path to downloaded visualcloze-384-lora.pth" --resol
 python app.py --model_path "path to downloaded visualcloze-512-lora.pth" --resolution 512
 ```
 
-#### Usage Tips:
+#### Usage Tips
 - [SDEdit](https://arxiv.org/abs/2108.01073) is used to upsampling the generated image that has the initial resoluation of 384/512 when using grid resolution of 384/512. You can set `upsampling noise` in the advanced options to adjust the noise levels added to the image. 
 For tasks that have strict requirements on the spatial alignment of inputs and outputs, 
 you can increase `upsampling noise` or even set it to 1 to disable SDEdit.
 - ❗❗❗ Before clicking the generate button, **please wait until all images, prompts, and other components are fully loaded**, especially when using task examples. Otherwise, the inputs from the previous and current sessions may get mixed.
 
 
-### 3. Custom Sampling
+### 3. Custom Sampling with Diffusers
 
-We have implement a pipeline of the visualcloze in [visualcloze.py](https://github.com/lzyhha/VisualCloze/blob/main/visualcloze.py). 
+👋👋👋 We have implemented a version of [diffusers](https://github.com/lzyhha/diffusers/tree/main/src/diffusers/pipelines/visualcloze) that makes it easier to use the model through **pipelines** of the diffusers. For usage guidance, please refer to the [Model Card](https://huggingface.co/VisualCloze/VisualClozePipeline-384).
+
+First, install diffusers from our forked repository.
+
+```shell
+git clone https://github.com/lzyhha/diffusers
+
+cd diffusers
+pip install -v -e .
+```
+
+Then you can use VisualClozePipeline to run the model.
+
+```python
+import torch
+from diffusers import VisualClozePipeline
+from diffusers.utils import load_image
+
+
+# Load in-context images (make sure the paths are correct and accessible)
+image_paths = [
+    # in-context examples
+    [
+        load_image('https://github.com/lzyhha/VisualCloze/raw/main/examples/examples/tryon/00700_00.jpg'),
+        load_image('https://github.com/lzyhha/VisualCloze/raw/main/examples/examples/tryon/03673_00.jpg'),
+        load_image('https://github.com/lzyhha/VisualCloze/raw/main/examples/examples/tryon/00700_00_tryon_catvton_0.jpg'),
+    ],
+    # query with the target image
+    [
+        load_image('https://github.com/lzyhha/VisualCloze/raw/main/examples/examples/tryon/00555_00.jpg'),
+        load_image('https://github.com/lzyhha/VisualCloze/raw/main/examples/examples/tryon/12265_00.jpg'),
+        None
+    ],
+]
+
+# Task and content prompt
+task_prompt = "Each row shows a virtual try-on process that aims to put [IMAGE2] the clothing onto [IMAGE1] the person, producing [IMAGE3] the person wearing the new clothing."
+content_prompt = None
+
+# Load the VisualClozePipeline
+pipe = VisualClozePipeline.from_pretrained("VisualCloze/VisualClozePipeline-384", torch_dtype=torch.bfloat16)
+pipe.enable_model_cpu_offload()  # Save some VRAM by offloading the model to CPU
+
+# Run the pipeline
+image_result = pipe(
+    task_prompt=task_prompt,
+    content_prompt=content_prompt,
+    image=image_paths,
+    upsampling_height=1632,
+    upsampling_width=1232,
+    upsampling_strength=0.3,
+    guidance_scale=30,
+    num_inference_steps=30,
+    max_sequence_length=512,
+    generator=torch.Generator("cpu").manual_seed(0)
+).images[0][0]
+
+# Save the resulting image
+image_result.save("visualcloze.png")
+```
+
+### 3. Custom Sampling without Diffusers
+
+We also implement a pipeline of the visualcloze in [visualcloze.py of this repository](https://github.com/lzyhha/VisualCloze/blob/main/visualcloze.py). 
 This can be easily used for custom reasoning. 
 In [inference.py](https://github.com/lzyhha/VisualCloze/blob/main/inference.py), we show an example of usage on virtual try-on.
 
