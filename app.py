@@ -17,6 +17,8 @@ default_steps = 30
 
 GUIDANCE = """
 
+### [💥 New] 👋👋👋 We release the <a href="https://github.com/lzyhha/diffusers/tree/main/src/diffusers/pipelines/visualcloze" target="_blank"><span style="color:rgb(253, 60, 94);"><em><strong>diffusers</strong></em></span></a> implementation that makes it easier to use the model through pipelines. See <a href="https://huggingface.co/VisualCloze/VisualClozePipeline-384" target="_blank">Model Card</a> for details.
+
 ## 📋 Quick Start Guide:
 1. Adjust **Number of In-context Examples**, 0 disables in-context learning.
 2. Set **Task Columns**, the number of images involved in a task.
@@ -62,21 +64,20 @@ def create_demo(model):
     with gr.Blocks(title="VisualCloze Demo") as demo:
         gr.Markdown("# VisualCloze: A Universal Image Generation Framework via Visual In-Context Learning")
 
-        gr.HTML("""
-        <div style="display:flex;column-gap:4px;">
-            <a href="xxx">
-                <img src='https://img.shields.io/badge/GitHub-Repo-blue'>
-            </a> 
-            <a href="xxx">
-                <img src='https://img.shields.io/badge/ArXiv-Paper-red'>
-            </a>
-            <a href="xxx">
-                <img src='https://img.shields.io/badge/VisualCloze%20checkpoint-HF%20Model-green?logoColor=violet&label=%F0%9F%A4%97%20Checkpoint'>
-            </a>
-            <a href="xxx">
-                <img src='https://img.shields.io/badge/VisualCloze%20datasets-HF%20Dataset-6B88E3?logoColor=violet&label=%F0%9F%A4%97%20Graph200k%20Dataset'>
-            </a>
-        </div>
+        gr.Markdown("""
+            <div align="center">
+
+            [[Paper](https://arxiv.org/abs/2504.07960)] &emsp; [[Project Page](https://visualcloze.github.io/)] &emsp; [[Github](https://github.com/lzyhha/VisualCloze)]
+            &emsp;
+            [[🤗 Online Demo](https://huggingface.co/spaces/VisualCloze/VisualCloze)] &emsp; [[🤗 Dataset Card](https://huggingface.co/datasets/VisualCloze/Graph200K)]
+            
+            </div>
+
+            <div align="center">
+
+            [[🤗 Model Card (<strong><span style="color:hotpink">Diffusers</span></strong>)](https://huggingface.co/VisualCloze/VisualClozePipeline-384)] &emsp; [[🤗 Model Card (<strong><span style="color:hotpink">LoRA</span></strong>)](https://huggingface.co/VisualCloze/VisualCloze/)]
+            
+            </div>
         """)
         
         gr.Markdown(GUIDANCE)
