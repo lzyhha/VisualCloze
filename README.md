@@ -147,7 +147,15 @@ cd diffusers
 pip install -v -e .
 ```
 
-Then you can use VisualClozePipeline to run the model.
+Note that chinese user can use command below to download the model:
+
+```bash
+git lfs install
+git clone https://www.wisemodel.cn/VisualCloze/VisualClozePipeline-384.git
+# git clone https://www.wisemodel.cn/VisualCloze/VisualClozePipeline-512.git
+```
+
+Then you can use VisualClozePipeline to run the model. 
 
 ```python
 import torch
