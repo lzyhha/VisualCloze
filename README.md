@@ -17,7 +17,7 @@
 </div>
 
 ## 📰 News
-- [2025-4-21] 👋👋👋 We have implemented a version of [diffusers](https://github.com/lzyhha/diffusers/tree/main/src/diffusers/pipelines/visualcloze) that makes it easier to use the model through **pipelines** of the diffusers. For usage guidance, please refer to the [Model Card](https://huggingface.co/VisualCloze/VisualClozePipeline-384).
+- [2025-5-15] 🤗🤗🤗 VisualCloze has been merged into the [**official pipelines of diffusers**](https://github.com/huggingface/diffusers/tree/main/src/diffusers/pipelines/visualcloze). For usage guidance, please refer to the [Model Card](https://huggingface.co/VisualCloze/VisualClozePipeline-384).
 
 
 ## 🌠 Key Features
@@ -136,23 +136,21 @@ you can increase `upsampling noise` or even set it to 1 to disable SDEdit.
 
 ### 3. Custom Sampling with Diffusers
 
-👋👋👋 We have implemented a version of [diffusers](https://github.com/lzyhha/diffusers/tree/main/src/diffusers/pipelines/visualcloze) that makes it easier to use the model through **pipelines** of the diffusers. For usage guidance, please refer to the [Model Card](https://huggingface.co/VisualCloze/VisualClozePipeline-384).
-
-First, install diffusers from our forked repository.
+⭐⭐⭐ VisualCloze has been merged into the [**official pipelines of diffusers**](https://github.com/huggingface/diffusers/tree/main/src/diffusers/pipelines/visualcloze). 
+For usage guidance, please refer to the [Model Card](https://huggingface.co/VisualCloze/VisualClozePipeline-384).
+ 
+First, please install diffusers.
 
 ```shell
-git clone https://github.com/lzyhha/diffusers
-
-cd diffusers
-pip install -v -e .
+pip install git+https://github.com/huggingface/diffusers.git
 ```
 
-Note that chinese user can use command below to download the model:
+Note that chinese users can use the command below to download the model:
 
 ```bash
 git lfs install
 git clone https://www.wisemodel.cn/VisualCloze/VisualClozePipeline-384.git
-# git clone https://www.wisemodel.cn/VisualCloze/VisualClozePipeline-512.git
+git clone https://www.wisemodel.cn/VisualCloze/VisualClozePipeline-512.git
 ```
 
 Then you can use VisualClozePipeline to run the model. 
@@ -164,6 +162,7 @@ from diffusers.utils import load_image
 
 
 # Load in-context images (make sure the paths are correct and accessible)
+# The images are from the VITON-HD dataset at https://github.com/shadow2496/VITON-HD
 image_paths = [
     # in-context examples
     [
@@ -184,8 +183,8 @@ task_prompt = "Each row shows a virtual try-on process that aims to put [IMAGE2]
 content_prompt = None
 
 # Load the VisualClozePipeline
-pipe = VisualClozePipeline.from_pretrained("VisualCloze/VisualClozePipeline-384", torch_dtype=torch.bfloat16)
-pipe.enable_model_cpu_offload()  # Save some VRAM by offloading the model to CPU
+pipe = VisualClozePipeline.from_pretrained("VisualCloze/VisualClozePipeline-384", resolution=384, torch_dtype=torch.bfloat16)
+pipe.to("cuda")
 
 # Run the pipeline
 image_result = pipe(
