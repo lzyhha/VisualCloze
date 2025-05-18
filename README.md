@@ -11,13 +11,14 @@
 <div align="center">
 
 [[Paper](https://arxiv.org/abs/2504.07960)] &emsp; [[Online Demo](https://huggingface.co/spaces/VisualCloze/VisualCloze)] &emsp; [[Project Page](https://visualcloze.github.io/)] 
-<br>[[🤗 Model Card (<strong><span style="color:hotpink">Diffusers</span></strong>)](https://huggingface.co/VisualCloze/VisualClozePipeline-384)] &emsp; [[🤗 Model Card (LoRA)](https://huggingface.co/VisualCloze/VisualCloze)] <br> [[🤗 Dataset Card](https://huggingface.co/datasets/VisualCloze/Graph200K)] <br>
+<br>[[🤗 Full Model Card (<strong><span style="color:hotpink">Diffusers</span></strong>)](https://huggingface.co/VisualCloze/VisualClozePipeline-384)] &emsp; [[🤗 LoRA Model Card (<strong><span style="color:hotpink">Diffusers</span></strong>)](https://huggingface.co/VisualCloze/VisualClozePipeline-LoRA-384)] <br> [[🤗 Dataset Card](https://huggingface.co/datasets/VisualCloze/Graph200K)] <br>
 
 
 </div>
 
 ## 📰 News
 - [2025-5-15] 🤗🤗🤗 VisualCloze has been merged into the [**official pipelines of diffusers**](https://github.com/huggingface/diffusers/tree/main/src/diffusers/pipelines/visualcloze). For usage guidance, please refer to the [Model Card](https://huggingface.co/VisualCloze/VisualClozePipeline-384).
+- [2025-5-18] 🥳🥳🥳 We have released the LoRA weights supporting diffusers at [LoRA Model Card 384](https://huggingface.co/VisualCloze/VisualClozePipeline-LoRA-384) and [LoRA Model Card 512](https://huggingface.co/VisualCloze/VisualClozePipeline-LoRA-512).
 
 
 ## 🌠 Key Features
@@ -104,6 +105,8 @@ datasets, to cover more diverse tasks and improve the generalization ability.**
 
 ⭐⭐ Using `huggingface-cli` downloading our model:
 
+**Note**: The weights here are provided for the training, testing, and gradio demo in this repository. For usage with **Diffusers**, please refer to the [Custom Sampling with Diffusers](https://github.com/lzyhha/VisualCloze?tab=readme-ov-file#3-custom-sampling-with-diffusers).
+
 ```bash
 huggingface-cli download --resume-download VisualCloze/VisualCloze --local-dir /path/to/ckpt
 ```
@@ -185,6 +188,11 @@ content_prompt = None
 # Load the VisualClozePipeline
 pipe = VisualClozePipeline.from_pretrained("VisualCloze/VisualClozePipeline-384", resolution=384, torch_dtype=torch.bfloat16)
 pipe.to("cuda")
+
+# Loading the VisualClozePipeline via LoRA
+# pipe = VisualClozePipeline.from_pretrained("black-forest-labs/FLUX.1-Fill-dev", resolution=384, torch_dtype=torch.bfloat16)
+# pipe.load_lora_weights('VisualCloze/VisualClozePipeline-LoRA-384', weight_name='visualcloze-lora-384.safetensors')
+# pipe.to("cuda")
 
 # Run the pipeline
 image_result = pipe(
