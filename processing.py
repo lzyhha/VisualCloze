@@ -92,9 +92,7 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
 
-    # todo
-    datasets.config.DOWNLOADED_DATASETS_PATH = "/mnt/hwfile/alpha_vl/lizhongyu/huggingface_upload/graph200k"
-    dataset = datasets.load_dataset("lzyhha/test", split=args.split)
+    dataset = datasets.load_dataset("VisualCloze/Graph200K", split=args.split)
     
     process_dataset(dataset, os.path.join(args.target_path, args.split))
     
