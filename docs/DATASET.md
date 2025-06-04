@@ -27,7 +27,7 @@ The dataset can be downloaded and used through the [Datasets](https://huggingfac
 
 ```python
 import datasets
-grapth200k = datasets.load_dataset("lzyhha/test") # todo
+grapth200k = datasets.load_dataset("VisualCloze/Graph200K")
 
 train = grapth200k['train']
 test = grapth200k['test']
