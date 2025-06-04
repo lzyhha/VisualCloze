@@ -1,5 +1,4 @@
 import os
-os.environ["HF_HOME"] = "/mnt/hwfile/alpha_vl/lizhongyu/huggingface_cache"
 import datasets
 import argparse
 from tqdm import tqdm
