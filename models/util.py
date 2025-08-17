@@ -397,11 +397,11 @@ def load_flow_model(
         ckpt_path = hf_hub_download(configs[name].repo_id, configs[name].repo_flow)
 
     print(f"ckpt_path: {ckpt_path}, lora_path: {lora_path}")
-    # with torch.device("meta" if ckpt_path is not None else device):
-    if lora_path is not None:
-        model = FluxLoraWrapper(params=configs[name].params, lora_rank=lora_rank, lora_scale=lora_scale).to(torch.bfloat16)
-    else:
-        model = Flux(configs[name].params).to(torch.bfloat16)
+    with torch.device("meta" if ckpt_path is not None else device):
+        if lora_path is not None:
+            model = FluxLoraWrapper(params=configs[name].params, lora_rank=lora_rank, lora_scale=lora_scale).to(torch.bfloat16)
+        else:
+            model = Flux(configs[name].params).to(torch.bfloat16)
 
     if ckpt_path is not None:
         print("Loading checkpoint")

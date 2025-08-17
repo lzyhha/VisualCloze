@@ -175,7 +175,7 @@ unseen_tasks = [
                 ], 
                 grid_h=3,
                 grid_w=2,
-                task_prompt="In each row, a logical task is demonstrated to achieve [IMAGE2] a high-aesthetic image based on [IMAGE1] an aesthetically pleasing photograph. Each row shows a process to edit the image with the given editing instruction. The editing instruction in the last row is: <editing instruction> turn the color of the sunglasses to green. <\editing instruction>", 
+                task_prompt=r"In each row, a logical task is demonstrated to achieve [IMAGE2] a high-aesthetic image based on [IMAGE1] an aesthetically pleasing photograph. Each row shows a process to edit the image with the given editing instruction. The editing instruction in the last row is: <editing instruction> turn the color of the sunglasses to green. <\editing instruction>",
                 content_prompt="", 
                 mask=[0, 1],
             )
@@ -195,7 +195,7 @@ unseen_tasks = [
                 ], 
                 grid_h=3,
                 grid_w=2,
-                task_prompt="In each row, a logical task is demonstrated to achieve [IMAGE2] a high-aesthetic image based on [IMAGE1] an aesthetically pleasing photograph. Each row shows a process to edit the image with the given editing instruction. The editing instruction in the last row is: <editing instruction> change the weather to a snowy scene in winter. <\editing instruction>", 
+                task_prompt=r"In each row, a logical task is demonstrated to achieve [IMAGE2] a high-aesthetic image based on [IMAGE1] an aesthetically pleasing photograph. Each row shows a process to edit the image with the given editing instruction. The editing instruction in the last row is: <editing instruction> change the weather to a snowy scene in winter. <\editing instruction>",
                 content_prompt="", 
                 mask=[0, 1],
             )

@@ -17,7 +17,7 @@ editing = [
         ], 
         grid_h=2,
         grid_w=2,
-        task_prompt=task_instruction + " " + editing_instruction + "<editing instruction> Add a large hawk perched on a branch in the foreground. <\editing instruction>",
+        task_prompt=r"In each row, a logical task is demonstrated to achieve [IMAGE2] a high-aesthetic image based on [IMAGE1] an aesthetically pleasing photograph. Each row shows a process to edit the image with the given editing instruction. The editing instruction in the last row is: <editing instruction> Add a large hawk perched on a branch in the foreground. <\editing instruction>",
         content_prompt="",
     ), 
      dict(
@@ -30,7 +30,7 @@ editing = [
         ], 
         grid_h=2,
         grid_w=2,
-        task_prompt=task_instruction + " " + editing_instruction + "<editing instruction> Remove a small, orange and white monkey with black face sitting on a branch in the tree. <\editing instruction>",
+        task_prompt=r"In each row, a logical task is demonstrated to achieve [IMAGE2] a high-aesthetic image based on [IMAGE1] an aesthetically pleasing photograph. Each row shows a process to edit the image with the given editing instruction. The editing instruction in the last row is: <editing instruction> Remove a small, orange and white monkey with black face sitting on a branch in the tree. <\editing instruction>",
         content_prompt="",
     ), 
 ]
