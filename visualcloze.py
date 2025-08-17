@@ -79,7 +79,7 @@ class VisualClozeModel:
     def __init__(
         self, model_path, model_name="flux-dev-fill-lora", max_length=512, lora_rank=256, 
         atol=1e-6, rtol=1e-3, solver='euler', time_shifting_factor=1, 
-        resolution=384, precision='bf16'):
+        resolution=384, precision='bf16', low_vram_mode=False):
         self.atol = atol
         self.rtol = rtol
         self.solver = solver
@@ -88,6 +88,7 @@ class VisualClozeModel:
         self.precision = precision
         self.max_length = max_length
         self.lora_rank = lora_rank
+        self.low_vram_mode = low_vram_mode
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.dtype = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}[self.precision]
         
@@ -97,18 +98,21 @@ class VisualClozeModel:
         
         # Initialize VAE
         print("Initializing VAE...")
-        self.ae = AutoencoderKL.from_pretrained(f"black-forest-labs/FLUX.1-dev", subfolder="vae", torch_dtype=self.dtype).to(self.device)
+        vae_device = "cpu" if self.low_vram_mode else self.device
+        self.ae = AutoencoderKL.from_pretrained(f"black-forest-labs/FLUX.1-dev", subfolder="vae", torch_dtype=self.dtype).to(vae_device)
         self.ae.requires_grad_(False)
         
         # Initialize text encoders
         print("Initializing text encoders...")
-        self.t5 = load_t5(self.device, max_length=self.max_length)
-        self.clip = load_clip(self.device)
+        text_encoder_device = "cpu" if self.low_vram_mode else self.device
+        self.t5 = load_t5(text_encoder_device, max_length=self.max_length)
+        self.clip = load_clip(text_encoder_device)
         
         self.model.eval().to(self.device, dtype=self.dtype)
         
         # Load model weights
-        ckpt = torch.load(model_path)
+        print(f"Loading model weights from {model_path}...")
+        ckpt = torch.load(model_path, map_location=self.device)
         self.model.load_state_dict(ckpt, strict=False)
         del ckpt
         
@@ -192,6 +196,11 @@ class VisualClozeModel:
             strength=upsampling_noise
         )
 
+        if self.low_vram_mode:
+            self.ae.to(self.device)
+            self.t5.to(self.device)
+            self.clip.to(self.device)
+
         processed_image = self.image_transform(image)
         processed_image = processed_image.to(self.device, non_blocking=True)
         blank = torch.zeros_like(processed_image, device=self.device, dtype=self.dtype)
@@ -241,6 +250,11 @@ class VisualClozeModel:
             sample = sample[0]
             
             output_image = to_pil_image(sample.float())
+
+            if self.low_vram_mode:
+                self.ae.to("cpu")
+                self.t5.to("cpu")
+                self.clip.to("cpu")
             
             return output_image
     
@@ -360,6 +374,11 @@ class VisualClozeModel:
                     processed_images[i] = processed_images[i].resize((new_w, new_h))
                 
         # Build grid image and mask
+        if self.low_vram_mode:
+            self.ae.to(self.device)
+            self.t5.to(self.device)
+            self.clip.to(self.device)
+
         with torch.autocast("cuda", self.dtype):
             grid_image = []
             fill_mask = []
@@ -439,6 +458,10 @@ class VisualClozeModel:
                 output_image = to_pil_image(row_sample.float())
                 output_images.append(output_image)
             
+            if self.low_vram_mode:
+                self.ae.to("cpu")
+                self.t5.to("cpu")
+                self.clip.to("cpu")
             torch.cuda.empty_cache()
             
             ret = []

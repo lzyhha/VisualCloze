@@ -509,6 +509,7 @@ def parse_args():
     parser.add_argument("--model_path", type=str, default=None)
     parser.add_argument("--precision", type=str, choices=["fp32", "bf16", "fp16"], default="bf16")
     parser.add_argument("--resolution", type=int, default=384)
+    parser.add_argument("--low_vram", action="store_true", help="Enable low VRAM mode.")
     return parser.parse_args()
 
 
@@ -516,7 +517,12 @@ if __name__ == "__main__":
     args = parse_args()
 
     # Initialize model
-    model = VisualClozeModel(resolution=args.resolution, model_path=args.model_path, precision=args.precision)
+    model = VisualClozeModel(
+        resolution=args.resolution,
+        model_path=args.model_path,
+        precision=args.precision,
+        low_vram_mode=args.low_vram
+    )
     
     # Create Gradio demo
     demo = create_demo(model)
