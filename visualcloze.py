@@ -108,14 +108,14 @@ class VisualClozeModel:
         self.t5 = load_t5(text_encoder_device, max_length=self.max_length)
         self.clip = load_clip(text_encoder_device)
         
-        self.model.eval().to(self.device, dtype=self.dtype)
-        
         # Load model weights
         print(f"Loading model weights from {model_path}...")
         ckpt = torch.load(model_path, map_location=self.device)
         self.model.load_state_dict(ckpt, strict=False)
         del ckpt
         
+        self.model.eval().to(self.device, dtype=self.dtype)
+
         # Initialize sampler
         transport = create_transport(
             "Linear",
