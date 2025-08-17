@@ -109,11 +109,12 @@ class VisualClozeModel:
         self.clip = load_clip(text_encoder_device)
         
         # Load model weights
-        print(f"Loading model weights from {model_path}...")
-        ckpt = torch.load(model_path, map_location=self.device)
-        self.model.load_state_dict(ckpt, strict=False)
-        del ckpt
-        
+        if model_path is not None:
+            print(f"Loading model weights from {model_path}...")
+            ckpt = torch.load(model_path, map_location=self.device)
+            self.model.load_state_dict(ckpt, strict=False)
+            del ckpt
+
         self.model.eval().to(self.device, dtype=self.dtype)
 
         # Initialize sampler
