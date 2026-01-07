@@ -279,10 +279,12 @@ You can modify `test_task_dicts` in [prefix_instruction.py](https://github.com/l
 If you find VisualCloze useful for your research and applications, please cite using this BibTeX:
 
 ```bibtex
-@article{li2025visualcloze,
-  title={VisualCloze: A Universal Image Generation Framework via Visual In-Context Learning},
-  author={Li, Zhong-Yu and Du, Ruoyi and Yan, Juncheng and Zhuo, Le and Wu, Qilong and Li, Zhen and Gao, Peng and Ma, Zhanyu and Cheng, Ming-Ming},
-  journal={arXiv preprint arXiv:2504.07960},
-  year={2025}
+@InProceedings{Li_2025_ICCV,
+    author    = {Li, Zhong-Yu and Du, Ruoyi and Yan, Juncheng and Zhuo, Le and Li, Zhen and Gao, Peng and Ma, Zhanyu and Cheng, Ming-Ming},
+    title     = {VisualCloze: A Universal Image Generation Framework via Visual In-Context Learning},
+    booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+    month     = {October},
+    year      = {2025},
+    pages     = {18969-18979}
 }
 ```
